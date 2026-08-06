@@ -1,0 +1,5 @@
+.DS_Store
+*.log
+# Nunca subir llaves privadas/secretas aquí
+.env
+.env.*
