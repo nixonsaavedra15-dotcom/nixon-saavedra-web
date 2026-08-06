@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Certificado — Campus Saavedra</title>
+<!-- ============================================================
+Plantilla de certificado — Campus Saavedra
+============================================================
+Cómo usar: reemplaza los tres marcadores de abajo antes de imprimir
+o exportar a PDF (Cmd+P → Guardar como PDF, en horizontal, sin márgenes):
+
+  {{NOMBRE_ESTUDIANTE}}  → nombre completo del estudiante
+  {{CURSO}}              → nombre del curso (ej: "Pre-ICFES")
+  {{DESCRIPCION_CURSO}}  → una línea describiendo el curso
+  {{FECHA}}               → fecha de emisión (ej: 6 de agosto de 2026)
+  {{CERT_ID}}             → el id del certificado (de la tabla certificates)
+
+Más adelante esto se puede automatizar para que la Edge Function genere
+el PDF final por cada estudiante, reemplazando estos marcadores por su
+información real.
+============================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,900;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f2e9; --ink:#20211d; --muted:#65685f;
+    --gold:#b8923a; --wine:#c1652f; --steel:#2f6f68; --line:rgba(32,33,29,.25);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:#ddd6c6;}
+  body{font-family:'Space Grotesk',sans-serif;color:var(--ink);display:flex;justify-content:center;padding:30px;}
+
+  .cert{
+    width:297mm;height:210mm;background:var(--bg);position:relative;
+    padding:16mm;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;
+  }
+  .cert::before{
+    content:"";position:absolute;inset:8mm;border:1.5px solid var(--gold);
+  }
+  .cert::after{
+    content:"";position:absolute;inset:10.5mm;border:.5px solid var(--line);
+  }
+
+  .seal{width:74px;height:74px;margin-bottom:14px;}
+
+  .kicker{font-size:13px;letter-spacing:5px;text-transform:uppercase;color:var(--steel);margin-bottom:26px;}
+
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:30px;letter-spacing:1px;color:var(--ink);}
+  .sub{color:var(--muted);font-size:14px;margin-top:10px;letter-spacing:.3px;}
+
+  .student{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:600;
+    font-size:46px;color:var(--wine);margin:30px 0 18px;
+    border-bottom:1px solid var(--line);padding-bottom:14px;min-width:60%;
+  }
+
+  .desc{max-width:640px;color:var(--ink);font-size:15px;line-height:1.7;margin-top:6px;}
+  .desc b{color:var(--steel);}
+
+  .footer{display:flex;justify-content:space-between;align-items:flex-end;width:100%;max-width:720px;margin-top:52px;}
+  .sig{text-align:center;}
+  .sig .line{width:220px;border-top:1px solid var(--ink);margin-bottom:8px;}
+  .sig .name{font-family:'Fraunces',serif;font-size:15px;}
+  .sig .role{color:var(--muted);font-size:11px;letter-spacing:.5px;text-transform:uppercase;margin-top:2px;}
+
+  .meta{text-align:right;color:var(--muted);font-size:11px;letter-spacing:.5px;}
+  .meta .date{color:var(--ink);font-size:13px;margin-bottom:4px;}
+
+  @media print{
+    body{padding:0;background:#fff;}
+    .cert{box-shadow:none;}
+    @page{size:297mm 210mm;margin:0;}
+  }
+</style>
+</head>
+<body>
+
+<div class="cert">
+
+  <!-- Sello / logo nuevo del curso, propio del sitio (sin reutilizar diseños anteriores) -->
+  <svg class="seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="47" fill="none" stroke="#b8923a" stroke-width="2"/>
+    <circle cx="50" cy="50" r="40" fill="none" stroke="#2f6f68" stroke-width="1"/>
+    <text x="50" y="57" text-anchor="middle" font-family="Fraunces, serif" font-weight="700" font-size="30" fill="#20211d">PI</text>
+  </svg>
+
+  <div class="kicker">Campus Saavedra</div>
+
+  <h1>Certificado de Finalización</h1>
+  <p class="sub">Se certifica que</p>
+
+  <div class="student">{{NOMBRE_ESTUDIANTE}}</div>
+
+  <p class="desc">
+    completó satisfactoriamente el curso <b>{{CURSO}}</b>, incluyendo el desarrollo de sus
+    módulos, actividades evaluativas y simulacro final.<br>
+    {{DESCRIPCION_CURSO}}
+  </p>
+
+  <div class="footer">
+    <div class="sig">
+      <div class="line"></div>
+      <div class="name">Nixon Saavedra Vela</div>
+      <div class="role">Director académico · Campus Saavedra</div>
+    </div>
+    <div class="meta">
+      <div class="date">{{FECHA}}</div>
+      <div>Certificado N.º {{CERT_ID}}</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

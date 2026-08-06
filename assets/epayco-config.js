@@ -9,5 +9,5 @@
 // deben vivir como variables de entorno en la Edge Function de Supabase.
 // ============================================================
 
-window.EPAYCO_PUBLIC_KEY = "TU-PUBLIC-KEY-AQUI";
+window.EPAYCO_PUBLIC_KEY = "188e1d8278a20c04b1bb4ff44791846a";
 window.EPAYCO_TEST_MODE = true; // cámbialo a false cuando quieras cobrar de verdad
