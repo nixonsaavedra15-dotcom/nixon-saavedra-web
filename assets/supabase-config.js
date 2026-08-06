@@ -10,5 +10,5 @@
 // la "service_role key" (esa es secreta y solo debe vivir en la Edge Function).
 // ============================================================
 
-window.SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
-window.SUPABASE_ANON_KEY = "TU-ANON-KEY-AQUI";
+window.SUPABASE_URL = "https://wyyayvipqvvjoiwlxjgl.supabase.co";
+window.SUPABASE_ANON_KEY = "sb_publishable_4gT25QbitMr_oaZdAwRWng_Ta9_S8o4";
