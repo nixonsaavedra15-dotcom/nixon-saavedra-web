@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crear contraseña — Campus Saavedra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,900;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="bg-fx">
+  <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div class="grain"></div>
+</div>
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+
+<header>
+  <nav class="wrap">
+    <div class="brand">N. Saavedra</div>
+    <div class="navlinks">
+      <a href="index.html">Inicio</a>
+      <a href="campus.html">Campus</a>
+      <a href="tienda.html">Tienda</a>
+      <a href="login.html" class="nav-account">Mi cuenta</a>
+    </div>
+  </nav>
+</header>
+
+<section class="auth-wrap">
+  <div class="wrap" style="display:flex;justify-content:center;">
+    <div class="auth-card reveal in">
+      <h1>Crea tu contraseña</h1>
+      <p class="lede">Este es el último paso: elige una contraseña para entrar a tu Campus cuando quieras.</p>
+
+      <form id="pw-form" class="form-grid">
+        <div class="form-group">
+          <label>Nueva contraseña</label>
+          <input type="password" id="pw1" placeholder="Mínimo 8 caracteres" required minlength="8" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label>Confirmar contraseña</label>
+          <input type="password" id="pw2" placeholder="Repítela" required minlength="8" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-accent" style="border:none;cursor:pointer;">Guardar y entrar al Campus</button>
+      </form>
+
+      <div id="pw-msg" class="auth-msg"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <div class="foot-brand">Nixon Saavedra</div>
+      <p style="color:var(--muted);margin-top:10px;max-width:360px;">Escríbeme para asesorías, cursos, charlas o proyectos editoriales.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/supabase-config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/script.js"></script>
+<script>
+  function showMsg(text, type){
+    const el = document.getElementById('pw-msg');
+    el.textContent = text;
+    el.className = 'auth-msg show ' + type;
+  }
+
+  document.getElementById('pw-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if(!supabaseReady()){
+      showMsg('El Campus todavía no está conectado a la base de datos.', 'err');
+      return;
+    }
+    const pw1 = document.getElementById('pw1').value;
+    const pw2 = document.getElementById('pw2').value;
+    if(pw1 !== pw2){
+      showMsg('Las dos contraseñas no coinciden.', 'err');
+      return;
+    }
+    // El enlace de invitación/recuperación ya deja la sesión activa al abrir esta página.
+    const { error } = await supabaseClient.auth.updateUser({ password: pw1 });
+    if(error){
+      showMsg('No pudimos guardar tu contraseña: ' + error.message, 'err');
+      return;
+    }
+    showMsg('¡Listo! Entrando a tu Campus...', 'ok');
+    setTimeout(() => window.location.href = 'dashboard.html', 1200);
+  });
+</script>
+</body>
+</html>

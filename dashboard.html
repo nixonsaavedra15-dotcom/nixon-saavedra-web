@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Campus — Nixon Saavedra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,900;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="bg-fx">
+  <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div class="grain"></div>
+</div>
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+
+<header>
+  <nav class="wrap">
+    <div class="brand">N. Saavedra</div>
+    <div class="navlinks">
+      <a href="index.html">Inicio</a>
+      <a href="campus.html">Campus</a>
+      <a href="tienda.html">Tienda</a>
+      <a href="contacto.html">Contacto</a>
+      <a href="login.html" class="nav-account active">Mi cuenta</a>
+    </div>
+  </nav>
+</header>
+
+<section class="tight">
+  <div class="wrap">
+
+    <div class="dash-top reveal in">
+      <div>
+        <h1 id="dash-greeting">Tu Campus</h1>
+        <p id="dash-sub">Cargando tu progreso...</p>
+      </div>
+      <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+    </div>
+
+    <div class="stat-row reveal in">
+      <div class="stat-card"><span class="n" id="stat-courses">—</span><span class="l">Cursos activos</span></div>
+      <div class="stat-card"><span class="n" id="stat-done">—</span><span class="l">Actividades completadas</span></div>
+      <div class="stat-card"><span class="n" id="stat-certs">—</span><span class="l">Certificados</span></div>
+      <div class="stat-card"><span class="n" id="stat-avg">—</span><span class="l">Promedio general</span></div>
+    </div>
+
+    <div id="courses-container">
+      <!-- Se llena por JS -->
+    </div>
+
+    <div style="margin-top:60px;">
+      <div class="split-head reveal in" style="margin-bottom:30px;">
+        <div><div class="num-tag">— Avisos</div><h2>Notificaciones</h2></div>
+      </div>
+      <div id="notif-container" class="notif-list"></div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <div class="foot-brand">Nixon Saavedra</div>
+      <p style="color:var(--muted);margin-top:10px;max-width:360px;">Escríbeme para asesorías, cursos, charlas o proyectos editoriales.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/supabase-config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/script.js"></script>
+<script>
+(async () => {
+  if(!supabaseReady()){
+    document.getElementById('dash-sub').textContent = 'El Campus todavía no está conectado a la base de datos. Vuelve pronto.';
+    document.getElementById('courses-container').innerHTML =
+      '<div class="empty-state">Estamos terminando de conectar el panel de estudiantes. Escríbeme si tienes dudas: <a href="contacto.html">contáctame</a>.</div>';
+    return;
+  }
+
+  const session = await requireSession();
+  if(!session) return; // requireSession ya redirige a login.html
+
+  const userId = session.user.id;
+
+  const { data: profile } = await supabaseClient
+    .from('profiles').select('full_name, email').eq('id', userId).maybeSingle();
+
+  const firstName = (profile?.full_name || profile?.email || session.user.email || '').split(' ')[0];
+  document.getElementById('dash-greeting').textContent = firstName ? `Hola, ${firstName}` : 'Tu Campus';
+
+  const { data: enrollments } = await supabaseClient
+    .from('enrollments')
+    .select('id, status, purchased_at, course:courses(id, title, slug, category)')
+    .eq('user_id', userId)
+    .order('purchased_at', { ascending: false });
+
+  const container = document.getElementById('courses-container');
+
+  if(!enrollments || enrollments.length === 0){
+    document.getElementById('dash-sub').textContent = 'Todavía no tienes cursos activos.';
+    container.innerHTML = '<div class="empty-state">Aún no has comprado ningún curso. <a href="campus.html">Explora el Campus</a> para empezar.</div>';
+    document.getElementById('stat-courses').textContent = '0';
+    document.getElementById('stat-done').textContent = '0';
+    document.getElementById('stat-certs').textContent = '0';
+    document.getElementById('stat-avg').textContent = '—';
+  } else {
+    document.getElementById('dash-sub').textContent = `Tienes ${enrollments.length} curso${enrollments.length===1?'':'s'} en marcha. Sigue avanzando.`;
+
+    let totalDone = 0, totalCerts = 0, gradeSum = 0, gradeCount = 0;
+    container.innerHTML = '';
+
+    for(const en of enrollments){
+      const { data: modules } = await supabaseClient
+        .from('modules').select('*').eq('course_id', en.course.id).order('order_index');
+
+      const { data: progressRows } = await supabaseClient
+        .from('progress').select('*').eq('enrollment_id', en.id);
+
+      const { data: cert } = await supabaseClient
+        .from('certificates').select('id, issued_at').eq('enrollment_id', en.id).maybeSingle();
+
+      const progressByModule = {};
+      (progressRows || []).forEach(p => { progressByModule[p.module_id] = p; });
+
+      const modulesList = modules || [];
+      const doneCount = modulesList.filter(m => progressByModule[m.id]?.completed).length;
+      const pct = modulesList.length ? Math.round((doneCount / modulesList.length) * 100) : 0;
+
+      totalDone += doneCount;
+      if(cert) totalCerts++;
+      modulesList.forEach(m => {
+        const g = progressByModule[m.id]?.grade;
+        if(g !== null && g !== undefined){ gradeSum += Number(g); gradeCount++; }
+      });
+
+      const panel = document.createElement('div');
+      panel.className = 'course-panel reveal in';
+      panel.innerHTML = `
+        <div class="course-panel-head">
+          <h3>${en.course.title}</h3>
+          <span class="pct">${pct}%</span>
+        </div>
+        <div class="progress-bar"><div class="fill" style="width:${pct}%"></div></div>
+        <div class="activity-list">
+          ${modulesList.length ? modulesList.map(m => {
+            const p = progressByModule[m.id];
+            const done = p?.completed;
+            const grade = (p?.grade !== null && p?.grade !== undefined) ? `<span class="grade">${p.grade}/100</span>` : '';
+            return `
+              <div class="activity-item ${done ? 'done' : ''}" data-module="${m.id}">
+                <span class="name"><span class="dot"></span>${m.title}</span>
+                <span style="display:flex;align-items:center;gap:12px;">
+                  ${grade}
+                  <button ${done ? 'disabled' : ''} onclick="marcarCompletado('${en.id}','${m.id}', this)">
+                    ${done ? 'Completado' : 'Marcar como completado'}
+                  </button>
+                </span>
+              </div>`;
+          }).join('') : '<div class="activity-item">Aún no hay módulos publicados para este curso.</div>'}
+        </div>
+        ${cert ? `<p class="cert-btn" style="color:var(--accent);font-size:13px;">Certificado emitido el ${new Date(cert.issued_at).toLocaleDateString('es-CO')}.</p>` : ''}
+      `;
+      container.appendChild(panel);
+    }
+
+    document.getElementById('stat-courses').textContent = enrollments.length;
+    document.getElementById('stat-done').textContent = totalDone;
+    document.getElementById('stat-certs').textContent = totalCerts;
+    document.getElementById('stat-avg').textContent = gradeCount ? Math.round(gradeSum / gradeCount) : '—';
+  }
+
+  const { data: notifs } = await supabaseClient
+    .from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(10);
+
+  const notifContainer = document.getElementById('notif-container');
+  if(!notifs || notifs.length === 0){
+    notifContainer.innerHTML = '<p style="color:var(--muted);font-size:14px;">No tienes notificaciones todavía.</p>';
+  } else {
+    notifContainer.innerHTML = notifs.map(n => `
+      <div class="notif-item">
+        ${n.message}
+        <time>${new Date(n.created_at).toLocaleString('es-CO')}</time>
+      </div>
+    `).join('');
+  }
+})();
+
+async function marcarCompletado(enrollmentId, moduleId, btn){
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  const { error } = await supabaseClient
+    .from('progress')
+    .update({ completed: true, completed_at: new Date().toISOString() })
+    .eq('enrollment_id', enrollmentId)
+    .eq('module_id', moduleId);
+
+  if(error){
+    btn.disabled = false;
+    btn.textContent = 'Marcar como completado';
+    alert('No se pudo guardar: ' + error.message);
+    return;
+  }
+  window.location.reload();
+}
+</script>
+</body>
+</html>

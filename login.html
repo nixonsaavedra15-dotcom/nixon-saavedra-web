@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi cuenta — Nixon Saavedra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,900;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="bg-fx">
+  <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div class="grain"></div>
+</div>
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+
+<header>
+  <nav class="wrap">
+    <div class="brand">N. Saavedra</div>
+    <div class="navlinks">
+      <a href="index.html">Inicio</a>
+      <a href="sobre-mi.html">Sobre mí</a>
+      <a href="campus.html">Campus</a>
+      <a href="tienda.html">Tienda</a>
+      <a href="bookly.html">Bookly</a>
+      <a href="obra.html">Obra</a>
+      <a href="contacto.html">Contacto</a>
+      <a href="login.html" class="nav-account active">Mi cuenta</a>
+    </div>
+  </nav>
+</header>
+
+<section class="auth-wrap">
+  <div class="wrap" style="display:flex;justify-content:center;">
+    <div class="auth-card reveal in">
+      <h1>Bienvenido de vuelta</h1>
+      <p class="lede">Ingresa con el correo y la contraseña que creaste al comprar tu curso.</p>
+
+      <form id="login-form" class="form-grid">
+        <div class="form-group">
+          <label>Correo</label>
+          <input type="email" id="login-email" placeholder="tu@correo.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-accent" style="border:none;cursor:pointer;">Ingresar al Campus</button>
+      </form>
+
+      <div id="login-msg" class="auth-msg"></div>
+
+      <div class="auth-foot">
+        ¿Aún no tienes cuenta? Se crea automáticamente cuando compras un curso en la <a href="tienda.html">tienda</a>.<br>
+        ¿Olvidaste tu contraseña? <a href="#" id="reset-link">Recupérala aquí</a>.
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <div class="foot-brand">Nixon Saavedra</div>
+      <p style="color:var(--muted);margin-top:10px;max-width:360px;">Escríbeme para asesorías, cursos, charlas o proyectos editoriales.</p>
+    </div>
+    <div class="socials">
+      <a href="https://www.facebook.com/nixon.saavedra.vela" target="_blank" rel="noopener" aria-label="Facebook">fb</a>
+      <a href="https://www.instagram.com/nixon_saavedra_vela/" target="_blank" rel="noopener" aria-label="Instagram">ig</a>
+      <a href="https://www.linkedin.com/in/nixon-saavedra-vela-653b865b/" target="_blank" rel="noopener" aria-label="LinkedIn">in</a>
+      <a href="https://www.youtube.com/@nixonsaavedravela843" target="_blank" rel="noopener" aria-label="YouTube">yt</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/supabase-config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/script.js"></script>
+<script>
+  function showMsg(text, type){
+    const el = document.getElementById('login-msg');
+    el.textContent = text;
+    el.className = 'auth-msg show ' + type;
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if(!supabaseReady()){
+      showMsg('El Campus todavía no está conectado a la base de datos. Vuelve pronto.', 'err');
+      return;
+    }
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if(error){
+      showMsg('No pudimos ingresarte: ' + error.message, 'err');
+      return;
+    }
+    window.location.href = 'dashboard.html';
+  });
+
+  document.getElementById('reset-link').addEventListener('click', async (e) => {
+    e.preventDefault();
+    if(!supabaseReady()){
+      showMsg('El Campus todavía no está conectado a la base de datos.', 'err');
+      return;
+    }
+    const email = document.getElementById('login-email').value.trim();
+    if(!email){
+      showMsg('Escribe primero tu correo arriba, y luego haz clic en "Recupérala aquí".', 'err');
+      return;
+    }
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/crear-contrasena.html'
+    });
+    if(error){
+      showMsg('No pudimos enviar el correo: ' + error.message, 'err');
+      return;
+    }
+    showMsg('Te enviamos un correo con el enlace para crear una nueva contraseña.', 'ok');
+  });
+
+  // Si ya hay sesión activa, va directo al panel
+  (async () => {
+    if(!supabaseReady()) return;
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(session) window.location.href = 'dashboard.html';
+  })();
+</script>
+</body>
+</html>

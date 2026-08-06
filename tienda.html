@@ -28,6 +28,7 @@
       <a href="bookly.html">Bookly</a>
       <a href="obra.html">Obra</a>
       <a href="contacto.html">Contacto</a>
+      <a href="login.html" class="nav-account">Mi cuenta</a>
     </div>
   </nav>
 </header>
@@ -96,7 +97,7 @@
           <h3>Cambridge Ready</h3>
           <p>Preparación para exámenes internacionales de Cambridge.</p>
           <div class="price-row"><span class="price">$ —</span><span class="status-badge">Próximamente</span></div>
-          <button class="buy-btn btn-disabled" disabled>Conectar pago (ePayco)</button>
+          <button class="buy-btn btn-disabled" disabled onclick="iniciarCompra('cambridge-ready', 0, 'Cambridge Ready')">Conectar pago (ePayco)</button>
         </div>
       </div>
 
@@ -107,7 +108,7 @@
           <h3>IA para Educadores</h3>
           <p>Herramientas de inteligencia artificial para el aula.</p>
           <div class="price-row"><span class="price">$ —</span><span class="status-badge">Próximamente</span></div>
-          <button class="buy-btn btn-disabled" disabled>Conectar pago (ePayco)</button>
+          <button class="buy-btn btn-disabled" disabled onclick="iniciarCompra('ia-educadores', 0, 'IA para Educadores')">Conectar pago (ePayco)</button>
         </div>
       </div>
 
@@ -118,7 +119,7 @@
           <h3>Pre-ICFES</h3>
           <p><em>(Pendiente por recibir el material del curso.)</em></p>
           <div class="price-row"><span class="price">$420.000</span><span class="status-badge">Próximamente</span></div>
-          <button class="buy-btn btn-disabled" disabled>Conectar pago (ePayco)</button>
+          <button class="buy-btn btn-disabled" disabled onclick="iniciarCompra('pre-icfes', 420000, 'Pre-ICFES')">Conectar pago (ePayco)</button>
         </div>
       </div>
 
@@ -151,6 +152,12 @@
   </div>
 </footer>
 
+<script src="https://checkout.epayco.co/checkout.js"></script>
+<script src="assets/epayco-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/supabase-config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/checkout.js"></script>
 <script src="assets/script.js"></script>
 </body>
 </html>
