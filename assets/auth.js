@@ -38,3 +38,33 @@ async function logout() {
   await supabaseClient.auth.signOut();
   window.location.href = "login.html";
 }
+
+// Inicia sesión (o crea la cuenta la primera vez) con Google.
+// redirectTo: a dónde volver después de autenticarse en Google.
+async function loginWithGoogle(redirectTo) {
+  if (!supabaseReady()) return;
+  await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: redirectTo || window.location.origin + "/dashboard.html" },
+  });
+}
+
+// Exige sesión Y rol de administrador. Si no hay sesión, redirige a
+// login.html (vía requireSession). Si hay sesión pero no es admin,
+// redirige a dashboard.html. Devuelve { session, profile } si todo bien.
+async function requireAdmin() {
+  const session = await requireSession();
+  if (!session) return null;
+
+  const { data: profile } = await supabaseClient
+    .from("profiles")
+    .select("id, full_name, email, role")
+    .eq("id", session.user.id)
+    .maybeSingle();
+
+  if (!profile || profile.role !== "admin") {
+    window.location.href = "dashboard.html";
+    return null;
+  }
+  return { session, profile };
+}

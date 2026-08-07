@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Panel de administrador — Nixon Saavedra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,900;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="bg-fx">
+  <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div class="grain"></div>
+</div>
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+
+<header>
+  <nav class="wrap">
+    <div class="brand">N. Saavedra</div>
+    <div class="navlinks">
+      <a href="index.html">Inicio</a>
+      <a href="dashboard.html">Mi Campus</a>
+      <a href="tienda.html">Tienda</a>
+      <a href="admin.html" class="nav-account active">Panel admin</a>
+    </div>
+  </nav>
+</header>
+
+<section class="tight">
+  <div class="wrap">
+
+    <div class="dash-top reveal in">
+      <div>
+        <h1 id="admin-greeting">Panel de administrador</h1>
+        <p id="admin-sub">Cargando información del Campus...</p>
+      </div>
+      <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+    </div>
+
+    <div class="stat-row reveal in">
+      <div class="stat-card"><span class="n" id="stat-students">—</span><span class="l">Estudiantes</span></div>
+      <div class="stat-card"><span class="n" id="stat-active">—</span><span class="l">Matrículas activas</span></div>
+      <div class="stat-card"><span class="n" id="stat-completed">—</span><span class="l">Cursos completados</span></div>
+      <div class="stat-card"><span class="n" id="stat-tickets">—</span><span class="l">Preguntas pendientes</span></div>
+    </div>
+
+    <div class="admin-tabs reveal in">
+      <button class="admin-tab active" data-tab="estudiantes" onclick="switchTab('estudiantes')">Estudiantes</button>
+      <button class="admin-tab" data-tab="cursos" onclick="switchTab('cursos')">Cursos</button>
+      <button class="admin-tab" data-tab="soporte" onclick="switchTab('soporte')">Soporte</button>
+      <button class="admin-tab" data-tab="asignar" onclick="switchTab('asignar')">Asignar curso gratis</button>
+    </div>
+
+    <!-- ===== Estudiantes ===== -->
+    <div class="admin-panel active" id="panel-estudiantes">
+      <input type="text" class="admin-search" id="student-search" placeholder="Buscar por nombre o correo...">
+      <div id="students-container">
+        <div class="empty-state">Cargando estudiantes...</div>
+      </div>
+    </div>
+
+    <!-- ===== Cursos ===== -->
+    <div class="admin-panel" id="panel-cursos">
+      <div id="courses-container">
+        <div class="empty-state">Cargando cursos...</div>
+      </div>
+    </div>
+
+    <!-- ===== Soporte ===== -->
+    <div class="admin-panel" id="panel-soporte">
+      <div class="admin-tabs" style="margin-bottom:26px;">
+        <button class="admin-tab active" data-support-filter="open" onclick="filterSupport('open')">Sin responder</button>
+        <button class="admin-tab" data-support-filter="answered" onclick="filterSupport('answered')">Respondidas</button>
+        <button class="admin-tab" data-support-filter="all" onclick="filterSupport('all')">Todas</button>
+      </div>
+      <div id="support-container">
+        <div class="empty-state">Cargando preguntas...</div>
+      </div>
+    </div>
+
+    <!-- ===== Asignar curso gratis ===== -->
+    <div class="admin-panel" id="panel-asignar">
+      <div class="assign-card">
+        <h3>Asignar curso gratis</h3>
+        <p class="lede">Inscribe a cualquier persona en un curso sin pasar por ePayco. Si no tiene cuenta todavía, se le crea automáticamente y recibe un correo para poner su contraseña.</p>
+        <form id="assign-form" class="form-grid">
+          <div class="form-group">
+            <label>Correo del estudiante</label>
+            <input type="email" id="assign-email" placeholder="estudiante@correo.com" required>
+          </div>
+          <div class="form-group">
+            <label>Nombre completo (solo si es cuenta nueva)</label>
+            <input type="text" id="assign-name" placeholder="Nombre y apellido">
+          </div>
+          <div class="form-group">
+            <label>Curso</label>
+            <select id="assign-course" required style="width:100%;background:var(--bg-alt);border:1px solid var(--line);border-radius:10px;padding:14px 16px;color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:14px;">
+              <option value="">Cargando cursos...</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-accent" style="border:none;cursor:pointer;">Inscribir gratis</button>
+        </form>
+        <div id="assign-msg" class="auth-msg"></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <div class="foot-brand">Nixon Saavedra</div>
+      <p style="color:var(--muted);margin-top:10px;max-width:360px;">Panel interno — solo visible para administradores.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/supabase-config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/script.js"></script>
+<script>
+let ADMIN_SESSION = null;
+let ALL_COURSES = [];
+let ALL_SUPPORT = [];
+let SUPPORT_FILTER = 'open';
+
+function switchTab(name){
+  document.querySelectorAll('.admin-tabs .admin-tab[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.admin-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+}
+
+function filterSupport(status){
+  SUPPORT_FILTER = status;
+  document.querySelectorAll('[data-support-filter]').forEach(b => b.classList.toggle('active', b.dataset.supportFilter === status));
+  renderSupport();
+}
+
+function badgeFor(status){
+  if(status === 'active') return '<span class="badge badge-active">Activa</span>';
+  if(status === 'completed') return '<span class="badge badge-completed">Completado</span>';
+  if(status === 'cancelled') return '<span class="badge badge-cancelled">Desactivada</span>';
+  return `<span class="badge">${status}</span>`;
+}
+
+(async () => {
+  if(!supabaseReady()){
+    document.getElementById('admin-sub').textContent = 'El Campus todavía no está conectado a la base de datos.';
+    return;
+  }
+
+  const result = await requireAdmin();
+  if(!result) return; // requireAdmin ya redirige si no hay sesión o no es admin
+  ADMIN_SESSION = result.session;
+
+  const firstName = (result.profile.full_name || result.profile.email || '').split(' ')[0];
+  document.getElementById('admin-greeting').textContent = firstName ? `Hola, ${firstName}` : 'Panel de administrador';
+  document.getElementById('admin-sub').textContent = 'Estudiantes, cursos, soporte y matrículas del Campus, todo en un solo lugar.';
+
+  await Promise.all([loadStats(), loadCourses(), loadStudents(), loadSupport()]);
+
+  document.getElementById('student-search').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('.student-card').forEach(card => {
+      const hay = card.dataset.search.includes(q);
+      card.style.display = hay ? '' : 'none';
+    });
+  });
+
+  document.getElementById('assign-form').addEventListener('submit', onAssignSubmit);
+})();
+
+async function loadStats(){
+  const [{ count: students }, { count: active }, { count: completed }, { count: tickets }] = await Promise.all([
+    supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
+    supabaseClient.from('enrollments').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+    supabaseClient.from('enrollments').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+    supabaseClient.from('support_messages').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+  ]);
+  document.getElementById('stat-students').textContent = students ?? 0;
+  document.getElementById('stat-active').textContent = active ?? 0;
+  document.getElementById('stat-completed').textContent = completed ?? 0;
+  document.getElementById('stat-tickets').textContent = tickets ?? 0;
+}
+
+// ===================== ESTUDIANTES =====================
+
+async function loadStudents(){
+  const container = document.getElementById('students-container');
+
+  const { data: profiles, error } = await supabaseClient
+    .from('profiles')
+    .select('id, full_name, email, role, created_at')
+    .order('created_at', { ascending: false });
+
+  if(error || !profiles || profiles.length === 0){
+    container.innerHTML = '<div class="empty-state">Todavía no hay estudiantes registrados.</div>';
+    return;
+  }
+
+  const { data: enrollments } = await supabaseClient
+    .from('enrollments')
+    .select('id, user_id, status, purchased_at, course:courses(id, title, slug, category)')
+    .order('purchased_at', { ascending: false });
+
+  const byUser = {};
+  (enrollments || []).forEach(en => {
+    if(!byUser[en.user_id]) byUser[en.user_id] = [];
+    byUser[en.user_id].push(en);
+  });
+
+  container.innerHTML = '';
+  profiles.forEach(profile => {
+    const myEnrollments = byUser[profile.id] || [];
+    const card = document.createElement('div');
+    card.className = 'student-card';
+    card.dataset.search = `${(profile.full_name||'').toLowerCase()} ${(profile.email||'').toLowerCase()}`;
+
+    card.innerHTML = `
+      <div class="student-card-head">
+        <div>
+          <h3>${profile.full_name || '(sin nombre)'} ${profile.role === 'admin' ? '<span class="badge badge-admin">Admin</span>' : ''}</h3>
+          <div class="email">${profile.email || ''} · desde ${new Date(profile.created_at).toLocaleDateString('es-CO')}</div>
+        </div>
+        <div class="student-actions">
+          <button class="mini-btn" onclick="resetPassword('${profile.email}', this)">Restablecer contraseña</button>
+          <button class="mini-btn" onclick="togglePreview('${profile.id}', this)">Ver vista de estudiante</button>
+        </div>
+      </div>
+
+      ${myEnrollments.length ? myEnrollments.map(en => `
+        <div class="enroll-row">
+          <div>
+            <div class="course-name">${en.course?.title || 'Curso eliminado'}</div>
+            <div class="meta">Matriculado el ${new Date(en.purchased_at).toLocaleDateString('es-CO')}</div>
+          </div>
+          <div class="student-actions">
+            ${badgeFor(en.status)}
+            ${en.status !== 'completed' ? `
+              <button class="mini-btn ${en.status === 'cancelled' ? '' : 'danger'}" onclick="toggleEnrollment('${en.id}','${en.status}', this)">
+                ${en.status === 'cancelled' ? 'Reactivar' : 'Desactivar'}
+              </button>` : ''}
+          </div>
+        </div>
+      `).join('') : '<div class="enroll-row"><span class="meta">Sin cursos todavía.</span></div>'}
+
+      <div class="preview-panel" id="preview-${profile.id}"></div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+async function toggleEnrollment(enrollmentId, currentStatus, btn){
+  const newStatus = currentStatus === 'cancelled' ? 'active' : 'cancelled';
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  const { error } = await supabaseClient.from('enrollments').update({ status: newStatus }).eq('id', enrollmentId);
+  if(error){
+    alert('No se pudo actualizar: ' + error.message);
+  }
+  await loadStudents();
+  await loadStats();
+}
+
+async function resetPassword(email, btn){
+  if(!email) return;
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Enviando...';
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/crear-contrasena.html'
+  });
+  btn.disabled = false;
+  btn.textContent = original;
+  if(error){
+    alert('No se pudo enviar el correo: ' + error.message);
+    return;
+  }
+  alert(`Se envió un correo a ${email} para crear una nueva contraseña.`);
+}
+
+async function togglePreview(userId, btn){
+  const panel = document.getElementById('preview-' + userId);
+  const showing = panel.classList.contains('show');
+  if(showing){
+    panel.classList.remove('show');
+    panel.innerHTML = '';
+    btn.textContent = 'Ver vista de estudiante';
+    return;
+  }
+
+  btn.textContent = 'Cargando...';
+  panel.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando el panel del estudiante...</p>';
+  panel.classList.add('show');
+
+  const { data: enrollments } = await supabaseClient
+    .from('enrollments')
+    .select('id, status, purchased_at, course:courses(id, title, slug, category)')
+    .eq('user_id', userId)
+    .order('purchased_at', { ascending: false });
+
+  if(!enrollments || enrollments.length === 0){
+    panel.innerHTML = '<div class="empty-state">Este estudiante todavía no tiene cursos — así se vería su Campus vacío.</div>';
+    btn.textContent = 'Ocultar vista de estudiante';
+    return;
+  }
+
+  let html = '';
+  for(const en of enrollments){
+    const { data: modules } = await supabaseClient
+      .from('modules').select('*').eq('course_id', en.course.id).order('order_index');
+    const { data: progressRows } = await supabaseClient
+      .from('progress').select('*').eq('enrollment_id', en.id);
+    const { data: cert } = await supabaseClient
+      .from('certificates').select('id, issued_at').eq('enrollment_id', en.id).maybeSingle();
+
+    const progressByModule = {};
+    (progressRows || []).forEach(p => { progressByModule[p.module_id] = p; });
+    const modulesList = modules || [];
+    const doneCount = modulesList.filter(m => progressByModule[m.id]?.completed).length;
+    const pct = modulesList.length ? Math.round((doneCount / modulesList.length) * 100) : 0;
+
+    html += `
+      <div class="course-panel" style="margin-bottom:16px;">
+        <div class="course-panel-head">
+          <h3>${en.course.title}</h3>
+          <span class="pct">${pct}%</span>
+        </div>
+        <div class="progress-bar"><div class="fill" style="width:${pct}%"></div></div>
+        <div class="activity-list">
+          ${modulesList.length ? modulesList.map(m => {
+            const p = progressByModule[m.id];
+            const done = p?.completed;
+            const grade = (p?.grade !== null && p?.grade !== undefined) ? `<span class="grade">${p.grade}/100</span>` : '';
+            return `
+              <div class="activity-item ${done ? 'done' : ''}">
+                <span class="name"><span class="dot"></span>${m.title}</span>
+                <span style="display:flex;align-items:center;gap:12px;">${grade}<span style="color:var(--muted);font-size:12px;">${done ? 'Completado' : 'Pendiente'}</span></span>
+              </div>`;
+          }).join('') : '<div class="activity-item">Sin módulos publicados.</div>'}
+        </div>
+        ${cert ? `<p class="cert-btn" style="color:var(--accent);font-size:13px;">Certificado emitido el ${new Date(cert.issued_at).toLocaleDateString('es-CO')}.</p>` : ''}
+      </div>
+    `;
+  }
+  panel.innerHTML = html;
+  btn.textContent = 'Ocultar vista de estudiante';
+}
+
+// ===================== CURSOS =====================
+
+async function loadCourses(){
+  const container = document.getElementById('courses-container');
+  const { data: courses } = await supabaseClient.from('courses').select('*').order('category');
+  ALL_COURSES = courses || [];
+
+  const select = document.getElementById('assign-course');
+  select.innerHTML = ALL_COURSES.filter(c => c.active).map(c => `<option value="${c.slug}">${c.title} — $${Number(c.price).toLocaleString('es-CO')}</option>`).join('') || '<option value="">No hay cursos activos</option>';
+
+  if(!ALL_COURSES.length){
+    container.innerHTML = '<div class="empty-state">No hay cursos cargados todavía.</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  for(const course of ALL_COURSES){
+    const { data: modules } = await supabaseClient.from('modules').select('*').eq('course_id', course.id).order('order_index');
+    const { count: enrolledCount } = await supabaseClient.from('enrollments').select('*', { count: 'exact', head: true }).eq('course_id', course.id);
+
+    const card = document.createElement('div');
+    card.className = 'course-admin-card';
+    card.innerHTML = `
+      <div class="course-admin-head">
+        <h3>${course.title}</h3>
+        <div class="student-actions">
+          ${course.active ? '<span class="badge badge-active">Activo</span>' : '<span class="badge badge-cancelled">Inactivo</span>'}
+          <button class="mini-btn" onclick="toggleCourse('${course.id}', ${course.active}, this)">${course.active ? 'Desactivar' : 'Activar'}</button>
+        </div>
+      </div>
+      <div class="course-admin-meta">$${Number(course.price).toLocaleString('es-CO')} · ${course.category || 'sin categoría'} · ${enrolledCount ?? 0} matriculados · ${(modules||[]).length} módulos</div>
+      <p style="color:var(--muted);font-size:13.5px;">${course.description || 'Sin descripción.'}</p>
+      ${(modules && modules.length) ? `<div class="module-mini-list">${modules.map(m => `<div class="module-mini"><span>${m.order_index + 1}. ${m.title}</span></div>`).join('')}</div>` : ''}
+    `;
+    container.appendChild(card);
+  }
+}
+
+async function toggleCourse(courseId, currentActive, btn){
+  btn.disabled = true;
+  const { error } = await supabaseClient.from('courses').update({ active: !currentActive }).eq('id', courseId);
+  if(error){
+    alert('No se pudo actualizar el curso: ' + error.message);
+  }
+  await loadCourses();
+}
+
+// ===================== SOPORTE =====================
+
+async function loadSupport(){
+  const { data: messages } = await supabaseClient
+    .from('support_messages')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  const list = messages || [];
+  const userIds = [...new Set(list.map(m => m.user_id))];
+  let profilesById = {};
+  if(userIds.length){
+    const { data: profiles } = await supabaseClient.from('profiles').select('id, full_name, email').in('id', userIds);
+    (profiles || []).forEach(p => { profilesById[p.id] = p; });
+  }
+
+  ALL_SUPPORT = list.map(m => ({ ...m, student: profilesById[m.user_id] || {} }));
+  renderSupport();
+}
+
+function renderSupport(){
+  const container = document.getElementById('support-container');
+  const items = ALL_SUPPORT.filter(m => SUPPORT_FILTER === 'all' ? true : m.status === SUPPORT_FILTER);
+
+  if(!items.length){
+    container.innerHTML = '<div class="empty-state">No hay preguntas en esta categoría.</div>';
+    return;
+  }
+
+  container.innerHTML = items.map(m => `
+    <div class="support-item ${m.status === 'open' ? 'status-open' : ''}">
+      <div class="support-head">
+        <div class="who">${m.student.full_name || m.student.email || 'Estudiante'} <small>${m.student.email || ''} · ${new Date(m.created_at).toLocaleString('es-CO')}</small></div>
+        ${m.status === 'open' ? '<span class="badge badge-open">Sin responder</span>' : '<span class="badge badge-answered">Respondida</span>'}
+      </div>
+      ${m.subject ? `<p style="font-weight:600;margin-bottom:6px;">${m.subject}</p>` : ''}
+      <p class="support-msg">${m.message}</p>
+      ${m.admin_reply ? `<div class="support-reply"><strong>Tu respuesta:</strong> ${m.admin_reply}</div>` : `
+        <div class="reply-form">
+          <textarea id="reply-${m.id}" placeholder="Escribe tu respuesta..."></textarea>
+          <button class="mini-btn on" style="align-self:flex-start;" onclick="replySupport('${m.id}', this)">Responder y notificar</button>
+        </div>
+      `}
+    </div>
+  `).join('');
+}
+
+async function replySupport(id, btn){
+  const textarea = document.getElementById('reply-' + id);
+  const reply = textarea.value.trim();
+  if(!reply){ alert('Escribe una respuesta antes de enviar.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  const ticket = ALL_SUPPORT.find(m => m.id === id);
+
+  const { error } = await supabaseClient.from('support_messages').update({
+    admin_reply: reply,
+    status: 'answered',
+    replied_at: new Date().toISOString(),
+  }).eq('id', id);
+
+  if(error){
+    alert('No se pudo enviar la respuesta: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = 'Responder y notificar';
+    return;
+  }
+
+  if(ticket){
+    await supabaseClient.from('notifications').insert({
+      user_id: ticket.user_id,
+      message: `Respondimos tu pregunta: "${reply.slice(0, 120)}${reply.length > 120 ? '...' : ''}"`,
+    });
+  }
+
+  await loadSupport();
+  await loadStats();
+}
+
+// ===================== ASIGNAR CURSO GRATIS =====================
+
+async function onAssignSubmit(e){
+  e.preventDefault();
+  const email = document.getElementById('assign-email').value.trim();
+  const fullName = document.getElementById('assign-name').value.trim();
+  const courseSlug = document.getElementById('assign-course').value;
+  const msgEl = document.getElementById('assign-msg');
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+
+  if(!email || !courseSlug){
+    msgEl.textContent = 'Completa el correo y elige un curso.';
+    msgEl.className = 'auth-msg show err';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Inscribiendo...';
+  msgEl.className = 'auth-msg';
+
+  const { data, error } = await supabaseClient.functions.invoke('admin-assign-course', {
+    body: { email, full_name: fullName, course_slug: courseSlug },
+  });
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Inscribir gratis';
+
+  if(error || data?.error){
+    msgEl.textContent = 'No se pudo inscribir: ' + (data?.error || error.message);
+    msgEl.className = 'auth-msg show err';
+    return;
+  }
+
+  msgEl.textContent = data?.message || 'Estudiante inscrito con éxito.';
+  msgEl.className = 'auth-msg show ok';
+  e.target.reset();
+  await loadStats();
+  await loadStudents();
+}
+</script>
+</body>
+</html>

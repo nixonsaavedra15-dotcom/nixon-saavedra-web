@@ -38,7 +38,10 @@
         <h1 id="dash-greeting">Tu Campus</h1>
         <p id="dash-sub">Cargando tu progreso...</p>
       </div>
-      <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+      <div class="student-actions">
+        <a href="admin.html" id="admin-link" class="mini-btn" style="display:none;">Panel admin</a>
+        <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+      </div>
     </div>
 
     <div class="stat-row reveal in">
@@ -57,6 +60,22 @@
         <div><div class="num-tag">— Avisos</div><h2>Notificaciones</h2></div>
       </div>
       <div id="notif-container" class="notif-list"></div>
+    </div>
+
+    <div class="support-mini reveal in" style="margin-top:60px;">
+      <h3>¿Necesitas ayuda?</h3>
+      <p style="color:var(--muted);font-size:13.5px;margin-bottom:16px;">Escríbenos tu duda y te responderemos por aquí mismo.</p>
+      <form id="support-form" class="form-grid" style="max-width:none;">
+        <div class="form-group">
+          <input type="text" id="support-subject" placeholder="Asunto (opcional)">
+        </div>
+        <div class="form-group">
+          <textarea id="support-message" placeholder="Cuéntanos qué necesitas..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-outline" style="cursor:pointer;align-self:flex-start;">Enviar pregunta</button>
+      </form>
+      <div id="support-msg" class="auth-msg"></div>
+      <div id="my-tickets" style="margin-top:24px;"></div>
     </div>
 
   </div>
@@ -90,10 +109,13 @@
   const userId = session.user.id;
 
   const { data: profile } = await supabaseClient
-    .from('profiles').select('full_name, email').eq('id', userId).maybeSingle();
+    .from('profiles').select('full_name, email, role').eq('id', userId).maybeSingle();
 
   const firstName = (profile?.full_name || profile?.email || session.user.email || '').split(' ')[0];
   document.getElementById('dash-greeting').textContent = firstName ? `Hola, ${firstName}` : 'Tu Campus';
+  if(profile?.role === 'admin'){
+    document.getElementById('admin-link').style.display = 'inline-block';
+  }
 
   const { data: enrollments } = await supabaseClient
     .from('enrollments')
@@ -190,7 +212,63 @@
       </div>
     `).join('');
   }
+
+  await loadMyTickets(userId);
 })();
+
+async function loadMyTickets(userId){
+  const { data: tickets } = await supabaseClient
+    .from('support_messages')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  const container = document.getElementById('my-tickets');
+  if(!tickets || tickets.length === 0){
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = tickets.map(t => `
+    <div class="my-ticket">
+      <div class="q">${t.subject ? `<strong>${t.subject}:</strong> ` : ''}${t.message}</div>
+      ${t.admin_reply ? `<div class="a">${t.admin_reply}</div>` : '<div class="a" style="opacity:.6;">Aún sin responder.</div>'}
+    </div>
+  `).join('');
+}
+
+document.getElementById('support-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if(!supabaseReady()) return;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+
+  const subject = document.getElementById('support-subject').value.trim();
+  const message = document.getElementById('support-message').value.trim();
+  const msgEl = document.getElementById('support-msg');
+  if(!message){
+    msgEl.textContent = 'Escribe tu pregunta antes de enviar.';
+    msgEl.className = 'auth-msg show err';
+    return;
+  }
+
+  const { error } = await supabaseClient.from('support_messages').insert({
+    user_id: session.user.id,
+    subject: subject || null,
+    message,
+  });
+
+  if(error){
+    msgEl.textContent = 'No se pudo enviar: ' + error.message;
+    msgEl.className = 'auth-msg show err';
+    return;
+  }
+
+  msgEl.textContent = 'Tu pregunta fue enviada. Te responderemos pronto.';
+  msgEl.className = 'auth-msg show ok';
+  e.target.reset();
+  await loadMyTickets(session.user.id);
+});
 
 async function marcarCompletado(enrollmentId, moduleId, btn){
   btn.disabled = true;

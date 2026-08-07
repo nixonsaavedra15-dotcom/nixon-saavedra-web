@@ -252,6 +252,76 @@ footer{padding:70px 0 50px;border-top:1px solid var(--line);}
 .empty-state{border:1px dashed var(--line);border-radius:20px;padding:60px 30px;text-align:center;color:var(--muted);}
 .empty-state a{color:var(--accent);font-weight:600;}
 
+/* ===== Panel de administrador ===== */
+.admin-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:40px;}
+.admin-tab{background:transparent;border:1px solid var(--line);color:var(--muted);padding:10px 22px;border-radius:24px;font-family:'Space Grotesk',sans-serif;font-size:12.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:.2s;}
+.admin-tab:hover{border-color:var(--accent);color:var(--accent);}
+.admin-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+.admin-panel{display:none;}
+.admin-panel.active{display:block;}
+
+.admin-search{width:100%;max-width:380px;padding:13px 20px;border:1px solid var(--line);border-radius:24px;background:var(--bg-alt);color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:13.5px;margin-bottom:30px;}
+.admin-search:focus{outline:none;border-color:var(--accent);}
+.admin-search::placeholder{color:var(--muted);}
+
+.student-card,.course-admin-card,.support-item{border:1px solid var(--line);border-radius:20px;padding:30px 32px;margin-bottom:22px;background:linear-gradient(160deg,rgba(33,29,24,.035),transparent);}
+.student-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;}
+.student-card-head h3{font-family:'Fraunces',serif;font-weight:600;font-size:19px;}
+.student-card-head .email{color:var(--muted);font-size:13px;margin-top:3px;}
+.student-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+
+.mini-btn{background:transparent;border:1px solid var(--line);color:var(--ink);padding:8px 16px;border-radius:16px;font-size:11px;letter-spacing:.3px;text-transform:uppercase;cursor:pointer;transition:.2s;white-space:nowrap;font-family:'Space Grotesk',sans-serif;}
+.mini-btn:hover{border-color:var(--accent);color:var(--accent);}
+.mini-btn.danger:hover{border-color:var(--wine);color:var(--wine);}
+.mini-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.mini-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+.enroll-row{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 0;border-top:1px solid var(--line);font-size:13.5px;}
+.enroll-row .course-name{font-weight:600;}
+.enroll-row .meta{color:var(--muted);font-size:12px;margin-top:2px;}
+
+.badge{display:inline-block;padding:4px 13px;border-radius:12px;font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;font-weight:600;white-space:nowrap;}
+.badge-active{background:color-mix(in srgb, var(--steel) 16%, transparent);color:var(--steel);}
+.badge-completed{background:color-mix(in srgb, var(--gold) 22%, transparent);color:var(--gold);}
+.badge-cancelled{background:color-mix(in srgb, var(--wine) 16%, transparent);color:var(--wine);}
+.badge-admin{background:color-mix(in srgb, var(--ink) 10%, transparent);color:var(--ink);}
+.badge-open{background:color-mix(in srgb, var(--wine) 16%, transparent);color:var(--wine);}
+.badge-answered{background:color-mix(in srgb, var(--steel) 16%, transparent);color:var(--steel);}
+
+.preview-panel{margin-top:22px;padding-top:22px;border-top:1px dashed var(--line);display:none;}
+.preview-panel.show{display:block;}
+.preview-panel .course-panel{padding:24px 26px;}
+
+.course-admin-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:6px;}
+.course-admin-head h3{font-family:'Fraunces',serif;font-weight:600;font-size:20px;}
+.course-admin-meta{color:var(--muted);font-size:13px;margin-bottom:16px;}
+.module-mini-list{display:flex;flex-direction:column;gap:8px;margin-top:16px;}
+.module-mini{background:var(--bg);padding:11px 18px;border-radius:10px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;}
+.module-mini span:first-child{color:var(--ink);}
+
+.support-item.status-open{border-color:var(--wine);}
+.support-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+.support-head .who{font-weight:600;font-size:14.5px;}
+.support-head .who small{display:block;color:var(--muted);font-weight:400;font-size:12px;margin-top:2px;}
+.support-msg{font-size:14px;color:var(--ink);margin-bottom:14px;line-height:1.65;}
+.support-reply{background:var(--bg);border-radius:12px;padding:16px 20px;font-size:13.5px;color:var(--muted);margin-top:12px;}
+.support-reply strong{color:var(--ink);}
+.reply-form{margin-top:14px;display:flex;flex-direction:column;gap:12px;}
+.reply-form textarea{width:100%;min-height:90px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:13.5px;resize:vertical;}
+.reply-form textarea:focus{outline:none;border-color:var(--accent);}
+
+.assign-card{max-width:560px;border:1px solid var(--line);border-radius:20px;padding:40px;background:linear-gradient(160deg,rgba(33,29,24,.035),transparent);}
+.assign-card h3{font-family:'Fraunces',serif;font-weight:600;font-size:22px;margin-bottom:8px;}
+.assign-card .lede{color:var(--muted);font-size:14px;margin-bottom:26px;}
+
+.support-mini{border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-top:20px;}
+.support-mini h3{font-family:'Fraunces',serif;font-size:17px;margin-bottom:14px;}
+.my-ticket{padding:12px 0;border-top:1px solid var(--line);font-size:13px;}
+.my-ticket:first-child{border-top:none;}
+.my-ticket .q{color:var(--ink);}
+.my-ticket .a{color:var(--muted);margin-top:6px;padding-left:14px;border-left:2px solid var(--accent);}
+
 @media(max-width:900px){
   .navlinks{display:none;}
   .split-head,.cred-grid,.campus-grid,.book-row,.teaser-grid,.gallery-grid,.book-detail,.contact-grid,.hero-grid,.stat-row{grid-template-columns:1fr;}
