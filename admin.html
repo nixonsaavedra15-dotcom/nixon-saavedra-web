@@ -384,10 +384,32 @@ async function loadCourses(){
       </div>
       <div class="course-admin-meta">$${Number(course.price).toLocaleString('es-CO')} · ${course.category || 'sin categoría'} · ${enrolledCount ?? 0} matriculados · ${(modules||[]).length} módulos</div>
       <p style="color:var(--muted);font-size:13.5px;">${course.description || 'Sin descripción.'}</p>
-      ${(modules && modules.length) ? `<div class="module-mini-list">${modules.map(m => `<div class="module-mini"><span>${m.order_index + 1}. ${m.title}</span></div>`).join('')}</div>` : ''}
+      ${(modules && modules.length) ? `
+        <div class="module-mini-list">${modules.map(m => `<div class="module-mini"><span>${m.order_index + 1}. ${m.title}</span></div>`).join('')}</div>
+        <button class="mini-btn" style="margin-top:14px;" onclick="toggleCourseContent('${course.id}', this)">Ver contenido completo</button>
+        <div class="module-full-list" id="content-${course.id}" style="display:none;">
+          ${modules.map(m => `
+            <div class="module-full">
+              <div class="module-full-head">
+                <span class="idx">${m.order_index + 1}</span>
+                <h4>${m.title}</h4>
+              </div>
+              <p>${m.description ? m.description.replace(/\n/g, '<br>') : '<em style="color:var(--muted);">Sin descripción cargada para este módulo.</em>'}</p>
+              ${m.content_url ? `<a href="${m.content_url}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--accent);">Ver material →</a>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : '<p style="color:var(--wine);font-size:13px;margin-top:10px;">Este curso todavía no tiene módulos cargados.</p>'}
     `;
     container.appendChild(card);
   }
+}
+
+function toggleCourseContent(courseId, btn){
+  const el = document.getElementById('content-' + courseId);
+  const showing = el.style.display !== 'none';
+  el.style.display = showing ? 'none' : 'block';
+  btn.textContent = showing ? 'Ver contenido completo' : 'Ocultar contenido completo';
 }
 
 async function toggleCourse(courseId, currentActive, btn){

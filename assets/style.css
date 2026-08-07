@@ -300,6 +300,13 @@ footer{padding:70px 0 50px;border-top:1px solid var(--line);}
 .module-mini{background:var(--bg);padding:11px 18px;border-radius:10px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;}
 .module-mini span:first-child{color:var(--ink);}
 
+.module-full-list{margin-top:16px;display:flex;flex-direction:column;gap:14px;}
+.module-full{background:var(--bg);border-radius:14px;padding:18px 22px;}
+.module-full-head{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+.module-full-head .idx{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.module-full-head h4{font-family:'Fraunces',serif;font-weight:600;font-size:15.5px;}
+.module-full p{color:var(--muted);font-size:13.5px;line-height:1.65;margin-bottom:6px;}
+
 .support-item.status-open{border-color:var(--wine);}
 .support-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
 .support-head .who{font-weight:600;font-size:14.5px;}
