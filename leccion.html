@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Lección — Nixon Saavedra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,900;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="bg-fx">
+  <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div class="grain"></div>
+</div>
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+
+<header>
+  <nav class="wrap">
+    <div class="brand">N. Saavedra</div>
+    <div class="navlinks">
+      <a href="dashboard.html">Mi Campus</a>
+      <a href="tienda.html">Tienda</a>
+      <a href="login.html" class="nav-account">Mi cuenta</a>
+    </div>
+  </nav>
+</header>
+
+<section class="tight">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="dashboard.html">Mi Campus</a> / <span id="breadcrumb-course">Cargando...</span></div>
+
+    <div id="lesson-root">
+      <div class="lesson-hero reveal in">
+        <div>
+          <h1 id="lesson-title" class="serif" style="font-size:clamp(26px,3.6vw,38px);font-weight:700;">Cargando...</h1>
+          <div id="lesson-status" style="margin:12px 0 20px;"></div>
+          <div id="lesson-body" class="lesson-content-body"></div>
+        </div>
+        <div class="lesson-illustration" id="lesson-illustration"></div>
+      </div>
+
+      <div id="quiz-container"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <div class="foot-brand">Nixon Saavedra</div>
+      <p style="color:var(--muted);margin-top:10px;max-width:360px;">Escríbeme para asesorías, cursos, charlas o proyectos editoriales.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/supabase-config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/illustrations.js"></script>
+<script src="assets/script.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const enrollmentId = params.get('enrollment');
+const moduleId = params.get('module');
+
+function temaDelModulo(mod){
+  const t = (mod?.title || '').toLowerCase();
+  if (t.includes('introduc')) return 'intro';
+  if (t.includes('gramática') || t.includes('gramatica') || t.includes('use of language') || t.includes('to be')) return 'grammar';
+  if (t.includes('listening') || t.includes('escucha')) return 'listening';
+  if (t.includes('speaking') || t.includes('oral')) return 'speaking';
+  if (t.includes('writing') || t.includes('escritura')) return 'writing';
+  if (t.includes('simulacro') || t.includes('certificaci') || t.includes('examen')) return 'exam';
+  if (t.includes('lectura') || t.includes('reading') || t.includes('aviso') || t.includes('enunciado') || t.includes('diálogo') || t.includes('dialogo') || t.includes('texto')) return 'reading';
+  return 'general';
+}
+
+(async () => {
+  if(!supabaseReady()){
+    document.getElementById('lesson-root').innerHTML = '<div class="empty-state">El Campus todavía no está conectado a la base de datos.</div>';
+    return;
+  }
+
+  const session = await requireSession();
+  if(!session) return;
+
+  if(!enrollmentId || !moduleId){
+    document.getElementById('lesson-root').innerHTML = '<div class="empty-state">Falta información del módulo. <a href="dashboard.html">Vuelve a tu Campus</a> y entra desde ahí.</div>';
+    return;
+  }
+
+  const { data: enrollment } = await supabaseClient
+    .from('enrollments')
+    .select('id, user_id, course:courses(id, title, slug)')
+    .eq('id', enrollmentId)
+    .maybeSingle();
+
+  if(!enrollment || enrollment.user_id !== session.user.id){
+    document.getElementById('lesson-root').innerHTML = '<div class="empty-state">No tienes acceso a este módulo.</div>';
+    return;
+  }
+
+  document.getElementById('breadcrumb-course').textContent = enrollment.course.title;
+
+  const { data: mod } = await supabaseClient.from('modules').select('*').eq('id', moduleId).maybeSingle();
+  const { data: progressRow } = await supabaseClient
+    .from('progress').select('*').eq('enrollment_id', enrollmentId).eq('module_id', moduleId).maybeSingle();
+
+  if(!mod || !progressRow){
+    document.getElementById('lesson-root').innerHTML = '<div class="empty-state">No encontramos este módulo.</div>';
+    return;
+  }
+
+  if(!progressRow.unlocked){
+    renderLocked(mod);
+    return;
+  }
+
+  renderLesson(mod, progressRow);
+  await loadQuiz(enrollmentId, moduleId);
+})();
+
+function renderLocked(mod){
+  document.getElementById('lesson-root').innerHTML = `
+    <div class="locked-box">
+      <h2 class="serif" style="font-size:26px;margin-bottom:14px;">Módulo bloqueado</h2>
+      <p>Primero debes aprobar el módulo anterior con al menos 75/100 para desbloquear "${mod.title}".</p>
+      <a href="dashboard.html" class="btn btn-outline" style="margin-top:22px;">Volver a mi Campus</a>
+    </div>
+  `;
+}
+
+function renderLesson(mod, progressRow){
+  document.getElementById('lesson-title').textContent = mod.title;
+  document.getElementById('lesson-illustration').innerHTML = obtenerIlustracion(temaDelModulo(mod));
+  document.getElementById('lesson-body').innerHTML = (mod.description || 'Sin contenido todavía.')
+    .split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
+
+  if(progressRow.completed){
+    document.getElementById('lesson-status').innerHTML =
+      `<span class="badge badge-completed">Completado — nota ${progressRow.grade ?? '—'}/100</span>`;
+  } else {
+    document.getElementById('lesson-status').innerHTML = `<span class="badge badge-active">En curso</span>`;
+  }
+}
+
+async function loadQuiz(enrollmentId, moduleId){
+  const container = document.getElementById('quiz-container');
+  const { data: quiz } = await supabaseClient.from('quizzes').select('*').eq('module_id', moduleId).maybeSingle();
+
+  if(!quiz){
+    container.innerHTML = '<div class="empty-state">Este módulo todavía no tiene cuestionario.</div>';
+    return;
+  }
+
+  const { data: questions } = await supabaseClient
+    .from('quiz_questions').select('*').eq('quiz_id', quiz.id).order('order_index');
+
+  if(!questions || questions.length === 0){
+    container.innerHTML = '<div class="empty-state">Este cuestionario todavía no tiene preguntas.</div>';
+    return;
+  }
+
+  const { data: choices } = await supabaseClient
+    .from('quiz_choices_public').select('*').in('question_id', questions.map(q => q.id)).order('order_index');
+
+  renderQuizForm(quiz, questions, choices || [], enrollmentId, moduleId);
+}
+
+function renderQuizForm(quiz, questions, choices, enrollmentId, moduleId){
+  const container = document.getElementById('quiz-container');
+  container.innerHTML = `
+    <div class="quiz-card reveal in">
+      <h3 class="serif" style="font-size:22px;margin-bottom:8px;">${quiz.title}</h3>
+      <p style="color:var(--muted);font-size:13.5px;margin-bottom:30px;">
+        Necesitas ${quiz.passing_score}/100 para desbloquear el siguiente módulo.
+        ${quiz.is_final ? ` Este es el examen final: tienes ${quiz.max_attempts ?? '∞'} intentos en total.` : ' Puedes intentarlo las veces que necesites hasta lograrlo.'}
+      </p>
+      <form id="quiz-form">
+        ${questions.map((q, i) => `
+          <div class="quiz-question">
+            <div class="q-num">Pregunta ${i + 1} de ${questions.length}</div>
+            <div class="q-prompt">${q.prompt}</div>
+            ${choices.filter(c => c.question_id === q.id).map(c => `
+              <label class="quiz-choice" data-question="${q.id}" data-choice="${c.id}">
+                <input type="radio" name="q-${q.id}" value="${c.id}" required>
+                <span>${c.choice_text}</span>
+              </label>
+            `).join('')}
+          </div>
+        `).join('')}
+        <button type="submit" class="btn btn-accent" style="border:none;cursor:pointer;margin-top:10px;">Enviar respuestas</button>
+      </form>
+      <div id="quiz-result"></div>
+    </div>
+  `;
+
+  document.getElementById('quiz-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const answers = questions.map(q => {
+      const checked = container.querySelector(`input[name="q-${q.id}"]:checked`);
+      return { question_id: q.id, choice_id: checked ? checked.value : null };
+    });
+
+    if(answers.some(a => !a.choice_id)){
+      alert('Responde todas las preguntas antes de enviar.');
+      return;
+    }
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Calificando...';
+
+    const { data, error } = await supabaseClient.functions.invoke('submit-quiz', {
+      body: { enrollment_id: enrollmentId, module_id: moduleId, answers },
+    });
+
+    if(error || data?.error){
+      alert('No se pudo calificar: ' + (data?.error || error.message));
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Enviar respuestas';
+      return;
+    }
+
+    renderResult(data);
+  });
+}
+
+function renderResult(result){
+  const form = document.getElementById('quiz-form');
+  form.querySelectorAll('input').forEach(i => i.disabled = true);
+  form.querySelector('button[type="submit"]').style.display = 'none';
+
+  result.feedback.forEach(f => {
+    const chosenLabel = f.chosen_choice_id ? form.querySelector(`.quiz-choice[data-choice="${f.chosen_choice_id}"]`) : null;
+    const correctLabel = f.correct_choice_id ? form.querySelector(`.quiz-choice[data-choice="${f.correct_choice_id}"]`) : null;
+    if(chosenLabel) chosenLabel.classList.add(f.is_correct ? 'correct' : 'incorrect');
+    if(correctLabel && !f.is_correct) correctLabel.classList.add('correct');
+
+    const fbEl = document.createElement('div');
+    fbEl.className = 'quiz-feedback';
+    fbEl.textContent = f.feedback || (f.is_correct ? '¡Correcto!' : `La respuesta correcta era: "${f.correct_choice_text}"`);
+    (chosenLabel || correctLabel)?.closest('.quiz-question')?.appendChild(fbEl);
+  });
+
+  const resultEl = document.getElementById('quiz-result');
+  const retryBtn = result.attempts_left === null
+    ? `<button class="btn btn-outline" style="margin-top:18px;cursor:pointer;" onclick="window.location.reload()">Intentar de nuevo</button>`
+    : result.attempts_left > 0
+      ? `<button class="btn btn-outline" style="margin-top:18px;cursor:pointer;" onclick="window.location.reload()">Intentar de nuevo (te quedan ${result.attempts_left})</button>`
+      : `<p style="color:var(--wine);margin-top:14px;font-size:13px;">Ya no tienes más intentos disponibles para este examen. Escríbenos desde "¿Necesitas ayuda?" en tu Campus.</p>`;
+
+  resultEl.innerHTML = `
+    <div class="quiz-result-banner ${result.passed ? 'pass' : 'fail'}">
+      <div class="score">${result.score}/100</div>
+      <p style="margin-top:10px;">
+        ${result.passed
+          ? (result.next_module_unlocked ? '¡Aprobaste! Ya desbloqueaste el siguiente módulo.' : '¡Felicitaciones, completaste el curso! Revisa tu certificado en el Campus.')
+          : `No alcanzaste los ${result.passing_score}/100 necesarios para desbloquear el siguiente módulo.`}
+      </p>
+      ${result.passed ? `<a href="dashboard.html" class="btn btn-accent" style="margin-top:18px;">Volver a mi Campus</a>` : retryBtn}
+    </div>
+  `;
+  resultEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+</script>
+</body>
+</html>

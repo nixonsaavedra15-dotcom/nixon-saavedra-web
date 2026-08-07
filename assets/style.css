@@ -322,6 +322,39 @@ footer{padding:70px 0 50px;border-top:1px solid var(--line);}
 .assign-card h3{font-family:'Fraunces',serif;font-weight:600;font-size:22px;margin-bottom:8px;}
 .assign-card .lede{color:var(--muted);font-size:14px;margin-bottom:26px;}
 
+/* ===== Lección + cuestionario ===== */
+.breadcrumb{color:var(--muted);font-size:13px;margin-bottom:30px;}
+.breadcrumb a:hover{color:var(--accent);}
+
+.lesson-hero{display:grid;grid-template-columns:1fr 260px;gap:50px;align-items:center;margin-bottom:50px;}
+.lesson-illustration{width:100%;}
+.lesson-illustration svg{width:100%;height:auto;}
+.lesson-content-body{font-size:15px;line-height:1.85;color:var(--ink);}
+.lesson-content-body p{margin-bottom:16px;}
+
+.locked-box{border:1px dashed var(--wine);border-radius:20px;padding:60px 30px;text-align:center;color:var(--muted);}
+
+.quiz-card{border:1px solid var(--line);border-radius:20px;padding:40px;background:linear-gradient(160deg,rgba(33,29,24,.035),transparent);}
+.quiz-question{margin-bottom:34px;padding-bottom:34px;border-bottom:1px solid var(--line);}
+.quiz-question:last-of-type{border-bottom:none;margin-bottom:10px;padding-bottom:0;}
+.quiz-question .q-num{font-family:'Fraunces',serif;font-style:italic;color:var(--accent);font-size:13px;margin-bottom:8px;}
+.quiz-question .q-prompt{font-size:16.5px;font-weight:600;margin-bottom:18px;line-height:1.5;}
+.quiz-choice{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;cursor:pointer;transition:.2s;font-size:14px;}
+.quiz-choice:hover{border-color:var(--accent);}
+.quiz-choice input{margin-top:3px;accent-color:var(--accent);}
+.quiz-choice.correct{border-color:var(--steel);background:color-mix(in srgb, var(--steel) 10%, transparent);}
+.quiz-choice.incorrect{border-color:var(--wine);background:color-mix(in srgb, var(--wine) 10%, transparent);}
+.quiz-feedback{font-size:13px;color:var(--muted);margin-top:6px;padding:12px 16px;background:var(--bg);border-radius:10px;line-height:1.6;}
+
+.quiz-result-banner{text-align:center;padding:44px 30px;border-radius:20px;margin-top:30px;}
+.quiz-result-banner.pass{background:color-mix(in srgb, var(--steel) 14%, transparent);}
+.quiz-result-banner.fail{background:color-mix(in srgb, var(--wine) 12%, transparent);}
+.quiz-result-banner .score{font-family:'Fraunces',serif;font-size:52px;}
+
+.module-link{display:flex;justify-content:space-between;align-items:center;gap:16px;text-decoration:none;}
+.module-link:hover .name{color:var(--accent);}
+.module-link.locked{cursor:not-allowed;opacity:.55;}
+
 .support-mini{border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-top:20px;}
 .support-mini h3{font-family:'Fraunces',serif;font-size:17px;margin-bottom:14px;}
 .my-ticket{padding:12px 0;border-top:1px solid var(--line);font-size:13px;}

@@ -174,17 +174,18 @@
           ${modulesList.length ? modulesList.map(m => {
             const p = progressByModule[m.id];
             const done = p?.completed;
+            const unlocked = p?.unlocked;
             const grade = (p?.grade !== null && p?.grade !== undefined) ? `<span class="grade">${p.grade}/100</span>` : '';
+            const statusText = done ? 'Completado' : unlocked ? 'Continuar →' : 'Bloqueado';
+            const href = unlocked ? `leccion.html?enrollment=${en.id}&module=${m.id}` : '#';
             return `
-              <div class="activity-item ${done ? 'done' : ''}" data-module="${m.id}">
+              <a class="activity-item module-link ${done ? 'done' : ''} ${!unlocked ? 'locked' : ''}" href="${href}" ${!unlocked ? 'onclick="return false;"' : ''}>
                 <span class="name"><span class="dot"></span>${m.title}</span>
                 <span style="display:flex;align-items:center;gap:12px;">
                   ${grade}
-                  <button ${done ? 'disabled' : ''} onclick="marcarCompletado('${en.id}','${m.id}', this)">
-                    ${done ? 'Completado' : 'Marcar como completado'}
-                  </button>
+                  <span style="color:var(--muted);font-size:12px;">${statusText}</span>
                 </span>
-              </div>`;
+              </a>`;
           }).join('') : '<div class="activity-item">Aún no hay módulos publicados para este curso.</div>'}
         </div>
         ${cert ? `<p class="cert-btn" style="color:var(--accent);font-size:13px;">Certificado emitido el ${new Date(cert.issued_at).toLocaleDateString('es-CO')}.</p>` : ''}
@@ -269,24 +270,6 @@ document.getElementById('support-form').addEventListener('submit', async (e) => 
   e.target.reset();
   await loadMyTickets(session.user.id);
 });
-
-async function marcarCompletado(enrollmentId, moduleId, btn){
-  btn.disabled = true;
-  btn.textContent = 'Guardando...';
-  const { error } = await supabaseClient
-    .from('progress')
-    .update({ completed: true, completed_at: new Date().toISOString() })
-    .eq('enrollment_id', enrollmentId)
-    .eq('module_id', moduleId);
-
-  if(error){
-    btn.disabled = false;
-    btn.textContent = 'Marcar como completado';
-    alert('No se pudo guardar: ' + error.message);
-    return;
-  }
-  window.location.reload();
-}
 </script>
 </body>
 </html>
