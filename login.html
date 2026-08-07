@@ -128,14 +128,14 @@
       showMsg('Escribe primero tu correo arriba, y luego haz clic en "Recupérala aquí".', 'err');
       return;
     }
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/crear-contrasena.html'
+    const { data, error } = await supabaseClient.functions.invoke('request-password-reset', {
+      body: { email },
     });
-    if(error){
-      showMsg('No pudimos enviar el correo: ' + error.message, 'err');
+    if(error || data?.error){
+      showMsg('No pudimos enviar el correo: ' + (data?.error || error.message), 'err');
       return;
     }
-    showMsg('Te enviamos un correo con el enlace para crear una nueva contraseña.', 'ok');
+    showMsg('Si ese correo tiene una cuenta, le llegará un enlace para crear una nueva contraseña.', 'ok');
   });
 
   // Si ya hay sesión activa, va directo al panel

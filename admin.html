@@ -272,13 +272,13 @@ async function resetPassword(email, btn){
   btn.disabled = true;
   const original = btn.textContent;
   btn.textContent = 'Enviando...';
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + '/crear-contrasena.html'
+  const { data, error } = await supabaseClient.functions.invoke('request-password-reset', {
+    body: { email },
   });
   btn.disabled = false;
   btn.textContent = original;
-  if(error){
-    alert('No se pudo enviar el correo: ' + error.message);
+  if(error || data?.error){
+    alert('No se pudo enviar el correo: ' + (data?.error || error.message));
     return;
   }
   alert(`Se envió un correo a ${email} para crear una nueva contraseña.`);
@@ -496,6 +496,8 @@ async function replySupport(id, btn){
       user_id: ticket.user_id,
       message: `Respondimos tu pregunta: "${reply.slice(0, 120)}${reply.length > 120 ? '...' : ''}"`,
     });
+    // Correo con marca — si falla, no bloquea nada, la respuesta ya quedó guardada.
+    await supabaseClient.functions.invoke('notify-support-reply', { body: { ticket_id: id } });
   }
 
   await loadSupport();
@@ -535,8 +537,8 @@ async function onAssignSubmit(e){
     return;
   }
 
-  msgEl.textContent = data?.message || 'Estudiante inscrito con éxito.';
-  msgEl.className = 'auth-msg show ok';
+  msgEl.textContent = data?.warning ? `${data.message} ${data.warning}` : (data?.message || 'Estudiante inscrito con éxito.');
+  msgEl.className = data?.warning ? 'auth-msg show err' : 'auth-msg show ok';
   e.target.reset();
   await loadStats();
   await loadStudents();

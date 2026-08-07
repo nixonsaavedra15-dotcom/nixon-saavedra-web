@@ -137,8 +137,9 @@ function renderLocked(mod){
 function renderLesson(mod, progressRow){
   document.getElementById('lesson-title').textContent = mod.title;
   document.getElementById('lesson-illustration').innerHTML = obtenerIlustracion(temaDelModulo(mod));
-  document.getElementById('lesson-body').innerHTML = (mod.description || 'Sin contenido todavía.')
-    .split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
+  // El contenido ya viene como HTML enriquecido (ver supabase/pre-icfes-lesson-content.sql),
+  // así que se inyecta tal cual — no se parte por líneas como antes.
+  document.getElementById('lesson-body').innerHTML = mod.description || '<p>Sin contenido todavía.</p>';
 
   if(progressRow.completed){
     document.getElementById('lesson-status').innerHTML =

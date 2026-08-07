@@ -1,21 +1,17 @@
 // ============================================================
-// admin-assign-course — Supabase Edge Function
+// notify-support-reply — Supabase Edge Function
 // ============================================================
-// Qué hace: permite que el administrador matricule a un estudiante
-// en un curso GRATIS desde el panel admin.html. Verifica primero
-// que quien llama de verdad sea un administrador (revisando su
-// sesión y su rol en la tabla profiles). Si el estudiante todavía
-// no tiene cuenta, la crea automáticamente; en cualquier caso le
-// manda un correo con la marca del sitio (vía SMTP propio — ver
-// _shared/email.ts y supabase/CORREOS-SETUP.md), no el correo
-// genérico de Supabase.
+// Qué hace: cuando el administrador responde una pregunta en el
+// panel (admin.html → pestaña Soporte), esta función le manda al
+// estudiante un correo con la marca del sitio avisándole que ya
+// tiene respuesta (antes solo se enteraba si entraba a su Campus).
 //
-// Secrets que necesita (ya deberían estar configurados desde el
-// despliegue de epayco-webhook — se comparten en el mismo proyecto):
-//   SUPABASE_URL
-//   SUPABASE_SERVICE_ROLE_KEY
-//   SITE_URL
-//   + las variables SMTP_* de _shared/email.ts (ver CORREOS-SETUP.md)
+// La llama admin.html DESPUÉS de guardar la respuesta en la tabla
+// support_messages (esa parte no cambia). Solo administradores
+// pueden invocarla.
+//
+// Secrets que necesita: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SITE_URL
+// + las variables SMTP_* (ver supabase/CORREOS-SETUP.md)
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.203.0/http/server.ts";
@@ -90,7 +86,6 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Verificar que quien llama tiene sesión y es administrador
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.replace("Bearer ", "");
     if (!token) {
@@ -115,141 +110,75 @@ serve(async (req) => {
       .maybeSingle();
 
     if (!callerProfile || callerProfile.role !== "admin") {
-      return new Response(JSON.stringify({ error: "No autorizado — esto es solo para administradores" }), {
+      return new Response(JSON.stringify({ error: "No autorizado" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 2. Leer los datos enviados desde el panel
     const body = await req.json();
-    const email = (body.email ?? "").toString().trim().toLowerCase();
-    const fullName = (body.full_name ?? "").toString().trim();
-    const courseSlug = (body.course_slug ?? "").toString().trim();
-
-    if (!email || !courseSlug) {
-      return new Response(JSON.stringify({ error: "Falta el correo o el curso" }), {
+    const ticketId = (body.ticket_id ?? "").toString().trim();
+    if (!ticketId) {
+      return new Response(JSON.stringify({ error: "Falta el ticket" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { data: course } = await supabaseAdmin
-      .from("courses")
-      .select("id, title")
-      .eq("slug", courseSlug)
+    const { data: ticket } = await supabaseAdmin
+      .from("support_messages")
+      .select("id, subject, message, admin_reply, user_id")
+      .eq("id", ticketId)
       .maybeSingle();
 
-    if (!course) {
-      return new Response(JSON.stringify({ error: "Ese curso no existe" }), {
+    if (!ticket || !ticket.admin_reply) {
+      return new Response(JSON.stringify({ error: "Ese ticket no existe o todavía no tiene respuesta" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 3. ¿El estudiante ya tiene cuenta? Si no, se crea y se le invita.
-    const { data: existingProfile } = await supabaseAdmin
+    const { data: student } = await supabaseAdmin
       .from("profiles")
-      .select("id")
-      .eq("email", email)
+      .select("email, full_name")
+      .eq("id", ticket.user_id)
       .maybeSingle();
 
-    let targetUserId: string;
-    let isNewAccount = false;
-    let accessLink: string | null = null; // link de invitación, solo para cuentas nuevas
-
-    if (existingProfile) {
-      targetUserId = existingProfile.id;
-    } else {
-      isNewAccount = true;
-      // generateLink crea la cuenta y nos da el enlace de acceso, pero NO
-      // envía ningún correo — así el único correo que le llega al estudiante
-      // es el nuestro, con la marca del sitio (ver _shared/email.ts).
-      const { data: linkData, error: inviteError } = await supabaseAdmin.auth.admin.generateLink({
-        type: "invite",
-        email,
-        options: {
-          data: { full_name: fullName },
-          redirectTo: `${SITE_URL}/crear-contrasena.html`,
-        },
-      });
-      if (inviteError || !linkData?.user) {
-        return new Response(
-          JSON.stringify({ error: "No se pudo crear la cuenta: " + (inviteError?.message ?? "error desconocido") }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      targetUserId = linkData.user.id;
-      accessLink = linkData.properties?.action_link ?? null;
-    }
-
-    // 4. Matricular gratis
-    const { error: enrollError } = await supabaseAdmin
-      .from("enrollments")
-      .upsert(
-        { user_id: targetUserId, course_id: course.id, payment_ref: "ADMIN-GRANT", status: "active" },
-        { onConflict: "user_id,course_id" }
-      );
-
-    if (enrollError) {
-      return new Response(JSON.stringify({ error: "No se pudo matricular: " + enrollError.message }), {
-        status: 500,
+    if (!student?.email) {
+      return new Response(JSON.stringify({ error: "No se encontró el correo del estudiante" }), {
+        status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 5. Notificación visible en el panel del estudiante
-    await supabaseAdmin.from("notifications").insert({
-      user_id: targetUserId,
-      message: `Un administrador te asignó el curso "${course.title}" de forma gratuita. ¡Ya puedes empezar!`,
-    });
-
-    // 6. Correo con la marca del sitio — con enlace de invitación si la
-    // cuenta es nueva, o enlace directo al login si ya tenía cuenta.
-    let emailWarning: string | null = null;
     try {
-      if (isNewAccount && accessLink) {
-        await sendBrandedEmail({
-          to: email,
-          subject: `Tu curso "${course.title}" ya está listo — Campus Saavedra`,
-          preheader: `Te asignamos "${course.title}" de forma gratuita. Crea tu contraseña para empezar.`,
-          bodyHtml: `
-            <p>Hola${fullName ? " " + fullName.split(" ")[0] : ""},</p>
-            <p>Te dimos acceso gratuito al curso <strong>"${course.title}"</strong> en el Campus de Nixon Saavedra.</p>
-            <p>Como es tu primera vez aquí, solo falta un paso: crea tu contraseña para entrar cuando quieras.</p>
-          `,
-          ctaText: "Crear mi contraseña y entrar",
-          ctaUrl: accessLink,
-        });
-      } else {
-        await sendBrandedEmail({
-          to: email,
-          subject: `Tu curso "${course.title}" ya está listo — Campus Saavedra`,
-          preheader: `Te asignamos "${course.title}" de forma gratuita. Ya puedes entrar a tu Campus.`,
-          bodyHtml: `
-            <p>Hola${fullName ? " " + fullName.split(" ")[0] : ""},</p>
-            <p>Te dimos acceso gratuito al curso <strong>"${course.title}"</strong> en el Campus de Nixon Saavedra.</p>
-            <p>Ya está disponible en tu cuenta — entra con tu correo y tu contraseña de siempre.</p>
-          `,
-          ctaText: "Entrar a mi Campus",
-          ctaUrl: `${SITE_URL}/login.html`,
-        });
-      }
+      await sendBrandedEmail({
+        to: student.email,
+        subject: ticket.subject ? `Respuesta a: "${ticket.subject}" — Campus Saavedra` : "Respondimos tu pregunta — Campus Saavedra",
+        preheader: "Ya tienes una respuesta esperándote en tu Campus.",
+        bodyHtml: `
+          <p>Hola${student.full_name ? " " + student.full_name.split(" ")[0] : ""},</p>
+          <p>Respondimos la pregunta que enviaste${ticket.subject ? ` sobre <strong>"${ticket.subject}"</strong>` : ""}:</p>
+          <div style="margin:16px 0;padding:16px 18px;background:#eee6d4;border-radius:10px;border:1px solid rgba(32,33,29,.14);">
+            <p style="margin:0 0 8px;color:#65685f;font-size:13px;"><em>Tu pregunta:</em> ${ticket.message}</p>
+            <p style="margin:0;">${ticket.admin_reply}</p>
+          </div>
+        `,
+        ctaText: "Ver en mi Campus",
+        ctaUrl: `${SITE_URL}/dashboard.html`,
+      });
     } catch (emailErr) {
-      // No queremos que un problema de correo tumbe la matrícula, que ya
-      // quedó guardada. Avisamos igual en la respuesta para que el admin lo sepa.
-      console.error("No se pudo enviar el correo de asignación:", emailErr);
-      emailWarning = "El estudiante quedó matriculado, pero no se pudo enviar el correo: " + String(emailErr);
+      console.error("No se pudo enviar el correo de respuesta de soporte:", emailErr);
+      return new Response(
+        JSON.stringify({ ok: true, warning: "La respuesta quedó guardada, pero no se pudo enviar el correo: " + String(emailErr) }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        message: `Listo: "${course.title}" fue asignado gratis a ${email}.`,
-        ...(emailWarning ? { warning: emailWarning } : {}),
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err) {
     return new Response(JSON.stringify({ error: "Error inesperado: " + String(err) }), {
       status: 500,

@@ -5,6 +5,12 @@
 -- Ya debes haber corrido antes supabase/schema.sql (crea las tablas y el
 -- curso 'pre-icfes'). Este script solo agrega los 9 módulos reales,
 -- tomados y organizados a partir de tu documento "CURSO PRE ICFES Inglés 2025".
+--
+-- IMPORTANTE: las descripciones de abajo son solo el resumen corto que
+-- se usaba al principio. El contenido real de cada lección (vocabulario,
+-- avisos, diálogos, tablas gramaticales, lecturas, autoevaluaciones) vive
+-- en supabase/pre-icfes-lesson-content.sql — corre ese archivo DESPUÉS de
+-- este para que las lecciones enseñen lo mismo que evalúa el cuestionario.
 -- ============================================================
 
 insert into public.modules (course_id, title, order_index, description)
