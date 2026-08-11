@@ -3,13 +3,26 @@
 // ============================================================
 // Qué hace: recibe las respuestas de un estudiante a un cuestionario,
 // las califica en el servidor (nunca en el navegador, para que nadie
-// pueda ver las respuestas correctas antes de contestar), guarda el
-// intento, y si aprueba (nota >= passing_score del cuestionario):
-//   - marca el módulo como completado (con la nota obtenida)
-//   - desbloquea el siguiente módulo del curso
-// Si el módulo es el examen final (is_final = true), aplica el límite
-// de intentos configurado (por defecto: 3, con 24h de espera antes
-// del último intento).
+// pueda ver las respuestas correctas antes de contestar) y guarda el
+// intento.
+//
+// Ahora soporta DOS formatos de módulo:
+//
+//   FORMATO ANTIGUO (stage = "main", el de siempre): si aprueba
+//   (nota >= passing_score), marca el módulo como completado y
+//   desbloquea el siguiente módulo del curso. Igual que antes.
+//
+//   FORMATO NUEVO (lección multi-paso, stage = "readings" o
+//   "interactive"): el módulo tiene DOS cuestionarios. Aprobar uno
+//   solo avanza el "current_step" del estudiante (a la lección
+//   interactiva o a la lectura de práctica) — el módulo se marca
+//   completado y se desbloquea el siguiente SOLO cuando el
+//   estudiante llena el formulario de cierre (Edge Function
+//   submit-closing-form), habiendo aprobado ambos cuestionarios.
+//
+// El body que manda el navegador ahora acepta un campo opcional
+// "stage" ("readings" | "interactive"). Si no lo manda, se usa "main"
+// (así los módulos viejos, que no lo envían, siguen funcionando igual).
 //
 // Devuelve, por cada pregunta: si acertó, cuál era la opción correcta
 // y la retroalimentación de por qué — así el estudiante entiende su
@@ -41,6 +54,13 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// Después de aprobar cada etapa del formato nuevo, a qué "current_step"
+// avanza el estudiante.
+const NEXT_STEP_AFTER_STAGE: Record<string, string> = {
+  readings: "interactive",
+  interactive: "practice",
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Método no permitido" }, 405);
@@ -59,10 +79,14 @@ serve(async (req) => {
     const body = await req.json();
     const enrollmentId = body.enrollment_id as string;
     const moduleId = body.module_id as string;
+    const stage = (body.stage as string) || "main";
     const answers = (body.answers ?? []) as { question_id: string; choice_id: string }[];
 
     if (!enrollmentId || !moduleId || !Array.isArray(answers) || answers.length === 0) {
       return json({ error: "Faltan datos para calificar el cuestionario" }, 400);
+    }
+    if (!["main", "readings", "interactive"].includes(stage)) {
+      return json({ error: "Etapa de cuestionario inválida" }, 400);
     }
 
     // 3. Confirmar que la matrícula es realmente del estudiante que llama
@@ -79,7 +103,7 @@ serve(async (req) => {
     // 4. Confirmar que el módulo está desbloqueado
     const { data: progressRow } = await supabaseAdmin
       .from("progress")
-      .select("id, unlocked, completed")
+      .select("id, unlocked, completed, current_step")
       .eq("enrollment_id", enrollmentId)
       .eq("module_id", moduleId)
       .maybeSingle();
@@ -87,14 +111,15 @@ serve(async (req) => {
     if (!progressRow) return json({ error: "Módulo no encontrado en tu matrícula" }, 404);
     if (!progressRow.unlocked) return json({ error: "Este módulo todavía está bloqueado" }, 403);
 
-    // 5. Buscar el cuestionario del módulo
+    // 5. Buscar el cuestionario de esta etapa del módulo
     const { data: quiz } = await supabaseAdmin
       .from("quizzes")
-      .select("id, passing_score, is_final, max_attempts, cooldown_hours")
+      .select("id, title, passing_score, is_final, max_attempts, cooldown_hours")
       .eq("module_id", moduleId)
+      .eq("stage", stage)
       .maybeSingle();
 
-    if (!quiz) return json({ error: "Este módulo no tiene cuestionario configurado" }, 404);
+    if (!quiz) return json({ error: "Este módulo no tiene cuestionario configurado para esta etapa" }, 404);
 
     // 6. Revisar límite de intentos (solo aplica si max_attempts no es null —
     // los cuestionarios de módulo normales son ilimitados)
@@ -182,15 +207,15 @@ serve(async (req) => {
     });
 
     let nextModuleUnlocked = false;
+    let nextStep: string | null = null;
 
-    if (passed) {
-      // 10. Marcar el módulo como completado con su nota
+    if (passed && stage === "main") {
+      // ---- Formato antiguo: aprobar el único cuestionario completa el módulo ----
       await supabaseAdmin
         .from("progress")
-        .update({ completed: true, completed_at: new Date().toISOString(), grade: score })
+        .update({ completed: true, completed_at: new Date().toISOString(), grade: score, current_step: "done" })
         .eq("id", progressRow.id);
 
-      // 11. Desbloquear el siguiente módulo del curso (si existe)
       const { data: currentModule } = await supabaseAdmin
         .from("modules")
         .select("order_index, course_id")
@@ -220,14 +245,20 @@ serve(async (req) => {
             message: `¡Aprobaste con ${score}/100! Ya desbloqueaste el siguiente módulo.`,
           });
         } else {
-          // Era el último módulo — handle_course_completed (trigger) ya
-          // emite el certificado automáticamente al marcar completed=true.
           await supabaseAdmin.from("notifications").insert({
             user_id: userId,
             message: `¡Felicitaciones! Completaste todo el curso con ${score}/100 en el último módulo. Tu certificado ya está disponible.`,
           });
         }
       }
+    } else if (passed && (stage === "readings" || stage === "interactive")) {
+      // ---- Formato nuevo: solo avanza el paso; el módulo se cierra con
+      // el formulario de cierre (submit-closing-form) ----
+      nextStep = NEXT_STEP_AFTER_STAGE[stage];
+      await supabaseAdmin
+        .from("progress")
+        .update({ current_step: nextStep })
+        .eq("id", progressRow.id);
     }
 
     const attemptsLeft =
@@ -243,6 +274,8 @@ serve(async (req) => {
       attempt_number: nextAttemptNumber,
       attempts_left: attemptsLeft,
       next_module_unlocked: nextModuleUnlocked,
+      next_step: nextStep,
+      stage,
       feedback,
     });
   } catch (err) {
