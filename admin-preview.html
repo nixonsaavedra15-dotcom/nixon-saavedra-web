@@ -41,6 +41,7 @@
   <div class="wrap">
     <div class="breadcrumb"><a href="admin.html">Panel admin</a> / <span id="breadcrumb-course">Cargando...</span></div>
     <h1 id="preview-title" class="serif" style="font-size:clamp(26px,3.6vw,38px);font-weight:700;">Cargando...</h1>
+    <div id="module-nav" style="display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 6px;"></div>
     <div id="preview-root" style="margin-top:30px;"></div>
   </div>
 </section>
@@ -71,7 +72,7 @@ function esc(s){
     return;
   }
 
-  const { data: mod } = await supabaseClient.from('modules').select('*, course:courses(title)').eq('id', moduleId).maybeSingle();
+  const { data: mod } = await supabaseClient.from('modules').select('*, course:courses(id, title)').eq('id', moduleId).maybeSingle();
   if(!mod){
     document.getElementById('preview-root').innerHTML = '<div class="empty-state">No se encontró este módulo.</div>';
     return;
@@ -79,6 +80,19 @@ function esc(s){
 
   document.getElementById('breadcrumb-course').textContent = mod.course?.title || 'Curso';
   document.getElementById('preview-title').textContent = mod.title;
+
+  // Selector de módulos del mismo curso, para saltar entre secciones sin
+  // volver al panel admin cada vez.
+  if(mod.course?.id){
+    const { data: siblingModules } = await supabaseClient
+      .from('modules').select('id, title, order_index').eq('course_id', mod.course.id).order('order_index');
+    const nav = document.getElementById('module-nav');
+    nav.innerHTML = (siblingModules || []).map(m => `
+      <a href="admin-preview.html?module=${m.id}"
+         class="mini-btn ${m.id === moduleId ? 'on' : ''}"
+         style="text-decoration:none;">${m.order_index + 1}. ${esc(m.title)}</a>
+    `).join('');
+  }
 
   const root = document.getElementById('preview-root');
   let html = '';
