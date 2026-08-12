@@ -474,6 +474,7 @@ async function loadCourses(){
       </div>
       <div class="course-admin-meta">$${Number(course.price).toLocaleString('es-CO')} · ${course.category || 'sin categoría'} · ${enrolledCount ?? 0} matriculados · ${(modules||[]).length} módulos</div>
       <p style="color:var(--muted);font-size:13.5px;">${course.description || 'Sin descripción.'}</p>
+      ${(modules && modules.length) ? `<button class="mini-btn on" style="margin-top:10px;" onclick="enterCourseAsAdmin('${course.slug}', this)">🔍 Entrar a este curso (verificación)</button>` : ''}
       ${(modules && modules.length) ? `
         <div class="module-mini-list">${modules.map(m => `<div class="module-mini"><span>${m.order_index + 1}. ${m.title}</span></div>`).join('')}</div>
         <button class="mini-btn" style="margin-top:14px;" onclick="toggleCourseContent('${course.id}', this)">Ver contenido completo</button>
@@ -493,6 +494,28 @@ async function loadCourses(){
     `;
     container.appendChild(card);
   }
+}
+
+async function enterCourseAsAdmin(courseSlug, btn){
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Entrando...';
+
+  const { data, error } = await supabaseClient.functions.invoke('admin-self-enroll', {
+    body: { course_slug: courseSlug },
+  });
+
+  if(error || data?.error){
+    alert('No se pudo entrar al curso: ' + (data?.error || error.message));
+    btn.disabled = false;
+    btn.textContent = original;
+    return;
+  }
+
+  // Te matriculamos a ti mismo (si no lo estabas ya) y te llevamos a Mi
+  // Campus — desde ahí navegas exactamente como cualquier estudiante:
+  // módulos, audios, cuestionarios y certificado al terminar.
+  window.location.href = 'dashboard.html';
 }
 
 function toggleCourseContent(courseId, btn){
