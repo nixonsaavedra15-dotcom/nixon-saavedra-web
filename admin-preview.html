@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Vista previa (admin) — Nixon Saavedra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,900;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .admin-preview-bar{position:sticky;top:0;z-index:50;background:var(--ink);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:13px;}
+  .admin-preview-bar a{color:#fff;text-decoration:underline;}
+  .preview-section{margin-bottom:36px;padding-bottom:32px;border-bottom:1px solid var(--line);}
+  .preview-section:last-child{border-bottom:none;}
+  .preview-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px;}
+  .pq-block{background:var(--bg-alt);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:14px;}
+  .pq-choice{padding:8px 12px;border-radius:8px;margin:4px 0;font-size:14px;}
+  .pq-choice.correct{background:rgba(47,111,104,.15);border:1px solid var(--steel);font-weight:600;}
+  .pq-feedback{font-size:12.5px;color:var(--muted);margin-top:4px;padding-left:12px;}
+  .preview-audio{width:100%;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<div class="admin-preview-bar">
+  <div>👁 <strong>Vista de verificación (admin)</strong> — contenido completo con respuestas correctas, sin necesidad de completar actividades.</div>
+  <div><a href="admin.html">← Volver al panel admin</a></div>
+</div>
+
+<header>
+  <nav class="wrap">
+    <div class="brand">N. Saavedra</div>
+    <div class="navlinks">
+      <a href="admin.html" class="active">Panel admin</a>
+    </div>
+  </nav>
+</header>
+
+<section class="tight">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="admin.html">Panel admin</a> / <span id="breadcrumb-course">Cargando...</span></div>
+    <h1 id="preview-title" class="serif" style="font-size:clamp(26px,3.6vw,38px);font-weight:700;">Cargando...</h1>
+    <div id="preview-root" style="margin-top:30px;"></div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/supabase-config.js"></script>
+<script src="assets/auth.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const moduleId = params.get('module');
+
+function esc(s){
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+(async () => {
+  if(!supabaseReady()){
+    document.getElementById('preview-root').innerHTML = '<div class="empty-state">El Campus todavía no está conectado a la base de datos.</div>';
+    return;
+  }
+  const result = await requireAdmin();
+  if(!result) return;
+
+  if(!moduleId){
+    document.getElementById('preview-root').innerHTML = '<div class="empty-state">Falta el módulo. Vuelve al panel admin y entra desde ahí.</div>';
+    return;
+  }
+
+  const { data: mod } = await supabaseClient.from('modules').select('*, course:courses(title)').eq('id', moduleId).maybeSingle();
+  if(!mod){
+    document.getElementById('preview-root').innerHTML = '<div class="empty-state">No se encontró este módulo.</div>';
+    return;
+  }
+
+  document.getElementById('breadcrumb-course').textContent = mod.course?.title || 'Curso';
+  document.getElementById('preview-title').textContent = mod.title;
+
+  const root = document.getElementById('preview-root');
+  let html = '';
+
+  if(mod.lesson_json){
+    const L = mod.lesson_json;
+    html += renderPreviewSection('Bienvenida', () => {
+      const w = L.welcome || {};
+      return `
+        <h3 class="serif" style="font-size:20px;">${esc(w.title)}</h3>
+        <p style="color:var(--muted);">${esc(w.subtitle)}</p>
+        <div class="lesson-content-body">${w.guide_html || ''}</div>
+        ${Array.isArray(w.objectives) ? `<ul>${w.objectives.map(o => `<li>${o}</li>`).join('')}</ul>` : ''}
+      `;
+    });
+
+    ['reading1', 'reading2'].forEach((key, i) => {
+      const r = L[key] || {};
+      html += renderPreviewSection(`${r.tag || 'Lectura ' + (i+1)} — ${r.title || ''}`, () => `
+        ${r.audio_url ? `<audio class="preview-audio" controls src="${r.audio_url}"></audio>` : ''}
+        <div class="lesson-content-body">${r.html || '<p>Sin contenido.</p>'}</div>
+      `);
+    });
+
+    if(L.interactive){
+      html += renderPreviewSection('Interactivo — ' + (L.interactive.title || ''), () => `
+        ${(L.interactive.slides || []).map(s => `
+          <div class="pq-block">
+            <strong>${esc(s.title)}</strong>
+            <p style="margin-top:6px;">${esc(s.bubble || s.text || '')}</p>
+            ${s.detail ? `<p style="margin-top:6px;color:var(--muted);">${esc(s.detail)}</p>` : ''}
+          </div>
+        `).join('')}
+      `);
+    }
+
+    if(L.practice){
+      html += renderPreviewSection('Práctica — ' + (L.practice.title || ''), () => `
+        <div class="lesson-content-body">${L.practice.html || ''}</div>
+      `);
+    }
+
+    if(Array.isArray(L.speaking_tasks) && L.speaking_tasks.length){
+      html += renderPreviewSection('Tareas de Speaking (referencia)', () => `
+        ${L.speaking_tasks.map(t => `
+          <div class="pq-block">
+            <strong>${esc(t.label)}</strong>
+            <p style="margin-top:6px;">${esc(t.prompt)}</p>
+            <p style="margin-top:6px;font-size:12.5px;color:var(--muted);">Palabras clave esperadas: ${(t.keywords||[]).join(', ')} · mínimo ${t.min_words} palabras / ${t.min_seconds}s hablando</p>
+          </div>
+        `).join('')}
+      `);
+    }
+
+    if(L.closing_form){
+      html += renderPreviewSection('Cierre — ' + (L.closing_form.title || ''), () => `
+        ${(L.closing_form.fields || []).map(f => `<p style="margin-bottom:10px;"><strong>${esc(f.label)}</strong></p>`).join('')}
+      `);
+    }
+
+    await appendQuizPreview(root, moduleId, 'readings', 'Cuestionario — Lecturas');
+    await appendQuizPreview(root, moduleId, 'interactive', 'Cuestionario — Repaso interactivo');
+  } else {
+    html += renderPreviewSection('Contenido de la lección', () => `
+      <div class="lesson-content-body">${mod.description || '<p>Sin contenido todavía.</p>'}</div>
+    `);
+  }
+
+  root.innerHTML = html;
+
+  if(!mod.lesson_json){
+    await appendQuizPreview(root, moduleId, 'main', 'Cuestionario');
+  }
+})();
+
+function renderPreviewSection(label, bodyFn){
+  return `
+    <div class="preview-section">
+      <div class="preview-label">${esc(label)}</div>
+      ${bodyFn()}
+    </div>
+  `;
+}
+
+async function appendQuizPreview(root, moduleId, stage, label){
+  const { data: quiz } = await supabaseClient.from('quizzes').select('*').eq('module_id', moduleId).eq('stage', stage).maybeSingle();
+  if(!quiz) return;
+
+  const { data: questions } = await supabaseClient.from('quiz_questions').select('*').eq('quiz_id', quiz.id).order('order_index');
+  if(!questions || !questions.length) return;
+
+  // Admin sí puede leer quiz_choices completa (con is_correct y feedback) —
+  // la política RLS "Admin ve todas las opciones" ya lo permite.
+  const { data: choices } = await supabaseClient.from('quiz_choices').select('*').in('question_id', questions.map(q => q.id)).order('order_index');
+
+  const section = document.createElement('div');
+  section.className = 'preview-section';
+  section.innerHTML = `
+    <div class="preview-label">${esc(label)} — ${esc(quiz.title)}</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Necesita ${quiz.passing_score}/100 para pasar. ${quiz.is_final ? `Examen final: ${quiz.max_attempts ?? '∞'} intentos.` : ''}</p>
+    ${questions.map((q, i) => `
+      <div class="pq-block">
+        ${q.audio_url ? `<audio class="preview-audio" controls src="${q.audio_url}"></audio>` : ''}
+        <div style="font-weight:600;margin-bottom:8px;">${i+1}. ${esc(q.prompt)}</div>
+        ${(choices || []).filter(c => c.question_id === q.id).map(c => `
+          <div class="pq-choice ${c.is_correct ? 'correct' : ''}">
+            ${c.is_correct ? '✓ ' : ''}${c.choice_text}
+            ${c.feedback ? `<div class="pq-feedback">${esc(c.feedback)}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `).join('')}
+  `;
+  root.appendChild(section);
+}
+</script>
+</body>
+</html>
