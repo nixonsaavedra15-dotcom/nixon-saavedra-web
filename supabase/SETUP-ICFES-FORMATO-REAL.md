@@ -22,7 +22,7 @@ No necesitas desplegar ninguna función nueva ni tocar `leccion.html` — todo e
 
 ```bash
 cd "/Users/macbookpro/Documents/Web Nixon/sitio"
-git add assets/style.css supabase/icfes-formato-real-partes-2-3-4-7.sql supabase/icfes-simulacro-final-45-preguntas.sql supabase/SETUP-ICFES-FORMATO-REAL.md
+git add assets/style.css admin-preview.html supabase/icfes-formato-real-partes-2-3-4-7.sql supabase/icfes-simulacro-final-45-preguntas.sql supabase/SETUP-ICFES-FORMATO-REAL.md
 git commit -m "Alinear Pre-ICFES con formato real ICFES: Partes 2/3/4/7 + Simulacro de 45 preguntas"
 git push
 ```
