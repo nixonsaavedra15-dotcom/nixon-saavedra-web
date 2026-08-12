@@ -306,6 +306,42 @@ async function resetPassword(email, btn){
   alert(`Se envió un correo a ${email} para crear una nueva contraseña.`);
 }
 
+async function resetQuizAttempts(enrollmentId, quizId, quizTitle, btn){
+  const ok = confirm(`¿Reiniciar "${quizTitle}" para este estudiante?\n\nSe borra su historial de intentos para este cuestionario — el próximo intento cuenta como el primero otra vez.`);
+  if(!ok) return;
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Reiniciando...';
+  const { data, error } = await supabaseClient.functions.invoke('admin-reset-quiz-attempts', {
+    body: { enrollment_id: enrollmentId, quiz_id: quizId },
+  });
+  btn.disabled = false;
+  btn.textContent = original;
+  if(error || data?.error){
+    alert('No se pudo reiniciar: ' + (data?.error || error.message));
+    return;
+  }
+  alert(data.message || 'Cuestionario reiniciado.');
+}
+
+async function resetAudioPlays(enrollmentId, quizId, btn){
+  const ok = confirm('¿Devolverle a este estudiante sus 2 reproducciones de audio para este cuestionario?');
+  if(!ok) return;
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Reiniciando...';
+  const { data, error } = await supabaseClient.functions.invoke('admin-reset-audio-plays', {
+    body: { enrollment_id: enrollmentId, quiz_id: quizId },
+  });
+  btn.disabled = false;
+  btn.textContent = original;
+  if(error || data?.error){
+    alert('No se pudo reiniciar: ' + (data?.error || error.message));
+    return;
+  }
+  alert(data.message || 'Reproducciones de audio reiniciadas.');
+}
+
 async function togglePreview(userId, btn){
   const panel = document.getElementById('preview-' + userId);
   const showing = panel.classList.contains('show');
@@ -347,6 +383,28 @@ async function togglePreview(userId, btn){
     const doneCount = modulesList.filter(m => progressByModule[m.id]?.completed).length;
     const pct = modulesList.length ? Math.round((doneCount / modulesList.length) * 100) : 0;
 
+    // Cuestionarios de este curso, para poder ofrecer "Reiniciar examen" /
+    // "Reiniciar audios" por módulo (útil si a alguien se le fue el
+    // internet a mitad de un examen o de un audio de Listening).
+    const moduleIds = modulesList.map(m => m.id);
+    let quizzesByModule = {};
+    if(moduleIds.length){
+      const { data: quizzes } = await supabaseClient
+        .from('quizzes').select('id, module_id, stage, title, is_final, max_attempts').in('module_id', moduleIds);
+      const quizIds = (quizzes || []).map(q => q.id);
+      let audioByQuiz = {};
+      if(quizIds.length){
+        const { data: audioQuestions } = await supabaseClient
+          .from('quiz_questions').select('quiz_id, audio_url').in('quiz_id', quizIds).not('audio_url', 'is', null);
+        (audioQuestions || []).forEach(q => { audioByQuiz[q.quiz_id] = (audioByQuiz[q.quiz_id] || 0) + 1; });
+      }
+      (quizzes || []).forEach(q => {
+        q.hasAudio = !!audioByQuiz[q.id];
+        if(!quizzesByModule[q.module_id]) quizzesByModule[q.module_id] = [];
+        quizzesByModule[q.module_id].push(q);
+      });
+    }
+
     html += `
       <div class="course-panel" style="margin-bottom:16px;">
         <div class="course-panel-head">
@@ -359,10 +417,20 @@ async function togglePreview(userId, btn){
             const p = progressByModule[m.id];
             const done = p?.completed;
             const grade = (p?.grade !== null && p?.grade !== undefined) ? `<span class="grade">${p.grade}/100</span>` : '';
+            const moduleQuizzes = quizzesByModule[m.id] || [];
+            const resetButtons = moduleQuizzes.map(q => `
+              <button class="mini-btn" style="font-size:11px;padding:5px 10px;" onclick="resetQuizAttempts('${en.id}','${q.id}','${(q.title || 'este cuestionario').replace(/'/g, "\\'")}', this)">
+                Reiniciar${moduleQuizzes.length > 1 ? ' ' + (q.stage === 'readings' ? 'quiz lecturas' : q.stage === 'interactive' ? 'quiz interactivo' : 'examen') : ' examen'}
+              </button>
+              ${q.hasAudio ? `<button class="mini-btn" style="font-size:11px;padding:5px 10px;" onclick="resetAudioPlays('${en.id}','${q.id}', this)">Reiniciar audios</button>` : ''}
+            `).join('');
             return `
-              <div class="activity-item ${done ? 'done' : ''}">
+              <div class="activity-item ${done ? 'done' : ''}" style="flex-wrap:wrap;gap:8px;">
                 <span class="name"><span class="dot"></span>${m.title}</span>
-                <span style="display:flex;align-items:center;gap:12px;">${grade}<span style="color:var(--muted);font-size:12px;">${done ? 'Completado' : 'Pendiente'}</span></span>
+                <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  ${grade}<span style="color:var(--muted);font-size:12px;">${done ? 'Completado' : 'Pendiente'}</span>
+                  ${resetButtons}
+                </span>
               </div>`;
           }).join('') : '<div class="activity-item">Sin módulos publicados.</div>'}
         </div>

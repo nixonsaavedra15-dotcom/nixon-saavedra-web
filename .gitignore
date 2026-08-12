@@ -3,3 +3,5 @@
 # Nunca subir llaves privadas/secretas aquí
 .env
 .env.*
+# Los audios ya viven en Supabase Storage — no hace falta duplicarlos en git
+Audios English A2/

@@ -187,10 +187,90 @@ async function loadQuiz(enrollmentId, moduleId, stage){
   const { data: choices } = await supabaseClient
     .from('quiz_choices_public').select('*').in('question_id', questions.map(q => q.id)).order('order_index');
 
-  renderQuizForm(quiz, questions, choices || [], enrollmentId, moduleId, stage, container);
+  // Preguntas con audio evaluativo (Listening): traemos cuántas veces ya
+  // se reprodujo cada una, para pintar el botón con el estado correcto
+  // desde el primer render (por si recargó la página a medio quiz).
+  const audioQuestionIds = questions.filter(q => q.audio_url).map(q => q.id);
+  let playsByQuestion = {};
+  if(audioQuestionIds.length){
+    const { data: plays } = await supabaseClient
+      .from('quiz_question_audio_plays')
+      .select('question_id, plays_used')
+      .eq('enrollment_id', enrollmentId)
+      .in('question_id', audioQuestionIds);
+    (plays || []).forEach(p => { playsByQuestion[p.question_id] = p.plays_used; });
+  }
+
+  renderQuizForm(quiz, questions, choices || [], enrollmentId, moduleId, stage, container, playsByQuestion);
 }
 
-function renderQuizForm(quiz, questions, choices, enrollmentId, moduleId, stage, container){
+const MAX_AUDIO_PLAYS = 2;
+
+async function playEvaluativeAudio(enrollmentId, questionId, btn){
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Cargando audio...';
+
+  const { data, error } = await supabaseClient.functions.invoke('register-audio-play', {
+    body: { enrollment_id: enrollmentId, question_id: questionId },
+  });
+
+  if(error || data?.error){
+    alert('No se pudo reproducir el audio: ' + (data?.error || error.message));
+    btn.disabled = false;
+    btn.textContent = original;
+    return;
+  }
+
+  if(!data.allowed){
+    btn.disabled = true;
+    btn.textContent = '🔒 Ya no puedes reproducir este audio';
+    btn.title = data.message || '';
+    const warn = document.getElementById('audio-warn-' + questionId);
+    if(warn) warn.textContent = data.message || `Ya usaste tus ${MAX_AUDIO_PLAYS} reproducciones.`;
+    return;
+  }
+
+  const player = document.getElementById('audio-el-' + questionId);
+  player.src = data.audio_url;
+  player.play();
+
+  if(data.plays_left > 0){
+    btn.disabled = false;
+    btn.textContent = `▶ Reproducir de nuevo (${data.plays_left} disponible${data.plays_left === 1 ? '' : 's'})`;
+    const warn = document.getElementById('audio-warn-' + questionId);
+    if(warn) warn.textContent = `Después de esta reproducción te queda ${data.plays_left} más — luego no podrás volver a escucharlo.`;
+  } else {
+    btn.disabled = true;
+    btn.textContent = '🔒 Ya usaste tus 2 reproducciones';
+    const warn = document.getElementById('audio-warn-' + questionId);
+    if(warn) warn.textContent = 'Esta era tu última reproducción — ya no podrás volver a escuchar este audio.';
+  }
+}
+
+function audioGateHtml(q, enrollmentId, playsByQuestion){
+  if(!q.audio_url) return '';
+  const used = playsByQuestion[q.id] || 0;
+  const left = Math.max(MAX_AUDIO_PLAYS - used, 0);
+  const locked = left <= 0;
+  const btnLabel = locked
+    ? '🔒 Ya usaste tus 2 reproducciones'
+    : (used === 0 ? '▶ Reproducir audio (2 disponibles)' : `▶ Reproducir de nuevo (${left} disponible${left === 1 ? '' : 's'})`);
+  const warnText = locked
+    ? 'Ya no puedes volver a escuchar este audio.'
+    : `Solo puedes reproducirlo ${MAX_AUDIO_PLAYS} veces en total — después de la segunda, no podrás volver a escucharlo.`;
+  return `
+    <div class="audio-eval-box" style="background:var(--bg-alt);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;">
+      <button type="button" class="btn btn-outline" style="cursor:pointer;font-size:13px;padding:9px 16px;" ${locked ? 'disabled' : ''}
+        onclick="playEvaluativeAudio('${enrollmentId}', '${q.id}', this)">${btnLabel}</button>
+      <audio id="audio-el-${q.id}" style="display:none;"></audio>
+      <div id="audio-warn-${q.id}" style="font-size:12px;color:var(--wine);margin-top:8px;">${warnText}</div>
+    </div>
+  `;
+}
+
+function renderQuizForm(quiz, questions, choices, enrollmentId, moduleId, stage, container, playsByQuestion){
+  playsByQuestion = playsByQuestion || {};
   container = container || document.getElementById('quiz-container');
   container.innerHTML = `
     <div class="quiz-card reveal in">
@@ -203,6 +283,7 @@ function renderQuizForm(quiz, questions, choices, enrollmentId, moduleId, stage,
         ${questions.map((q, i) => `
           <div class="quiz-question">
             <div class="q-num">Pregunta ${i + 1} de ${questions.length}</div>
+            ${audioGateHtml(q, enrollmentId, playsByQuestion)}
             <div class="q-prompt">${q.prompt}</div>
             ${choices.filter(c => c.question_id === q.id).map(c => `
               <label class="quiz-choice${c.choice_text.includes('<svg') ? ' pic-choice' : ''}" data-question="${q.id}" data-choice="${c.id}">
@@ -369,7 +450,7 @@ function renderStep(step){
   if(step === 'quiz_readings') return loadQuiz(CURRENT_ENROLLMENT_ID, CURRENT_MODULE_ID, 'readings');
   if(step === 'interactive') return renderInteractive(c, L.interactive);
   if(step === 'quiz_interactive') return loadQuiz(CURRENT_ENROLLMENT_ID, CURRENT_MODULE_ID, 'interactive');
-  if(step === 'practice') return renderPractice(c, L.practice);
+  if(step === 'practice') return renderPractice(c, L.practice, L.speaking_tasks);
   if(step === 'closing') return renderClosing(c, L.closing_form);
   if(step === 'done') return renderDone(c);
 }
@@ -406,6 +487,12 @@ function renderReading(c, r, nextStep){
     <div class="stage-card reading-stage reveal in">
       <div class="stage-tag">${r.tag || 'Lectura'}</div>
       <h2 class="serif" style="font-size:clamp(22px,2.6vw,28px);margin:8px 0 20px;">${r.title || ''}</h2>
+      ${r.audio_url ? `
+        <div class="audio-practice-box" style="background:var(--bg-alt);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:20px;">
+          <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">🎧 Escucha el audio mientras lees el guion abajo — puedes reproducirlo las veces que quieras.</div>
+          <audio controls style="width:100%;" src="${r.audio_url}"></audio>
+        </div>
+      ` : ''}
       <div class="lesson-content-body">${r.html || '<p>Sin contenido todavía.</p>'}</div>
       <button class="btn btn-accent" style="border:none;cursor:pointer;margin-top:10px;" onclick="advanceStep('${nextStep}')">Continuar →</button>
     </div>
@@ -455,16 +542,171 @@ function renderInteractive(c, I){
   paint();
 }
 
-function renderPractice(c, p){
+function renderPractice(c, p, speakingTasks){
   p = p || {};
   c.innerHTML = `
     <div class="stage-card practice-stage reveal in">
       <div class="stage-tag" style="color:var(--practice-coral);">Práctica</div>
       <h2 class="serif" style="font-size:clamp(22px,2.6vw,28px);margin:8px 0 20px;">${p.title || 'Casos de la vida real'}</h2>
       <div class="lesson-content-body">${p.html || '<p>Sin contenido todavía.</p>'}</div>
+      <div id="speaking-recorder-root"></div>
       <button class="btn btn-accent" style="border:none;cursor:pointer;margin-top:10px;" onclick="advanceStep('closing')">Ir al cierre de la lección →</button>
     </div>
   `;
+  if(Array.isArray(speakingTasks) && speakingTasks.length){
+    renderSpeakingRecorder(document.getElementById('speaking-recorder-root'), speakingTasks);
+  }
+}
+
+/* ============================================================
+   GRABADORA DE SPEAKING — transcripción en vivo del navegador
+   (Web Speech API, gratis, sin llave de API) + calificación por
+   reglas en el servidor (submit-speaking-attempt). Práctica
+   formativa: no bloquea el avance de la lección.
+   ============================================================ */
+
+function renderSpeakingRecorder(root, tasks){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  root.innerHTML = `
+    <div class="speaking-practice-block" style="margin-top:30px;">
+      <h3 class="serif" style="font-size:20px;margin-bottom:6px;">🎙️ Practica hablando en voz alta</h3>
+      <p style="color:var(--muted);font-size:13.5px;margin-bottom:20px;">
+        Esto es una práctica que te da retroalimentación al instante — no bloquea tu avance en la lección, puedes intentarlo las veces que quieras.
+      </p>
+      ${!SR ? `<div class="empty-state">Tu navegador no soporta reconocimiento de voz en vivo. Usa <strong>Chrome</strong> o <strong>Edge</strong> para esta actividad (en el resto del curso funciona igual en cualquier navegador).</div>` : ''}
+      <div id="speaking-tasks-list"></div>
+    </div>
+  `;
+  if(!SR) return;
+
+  const list = document.getElementById('speaking-tasks-list');
+  tasks.forEach((task) => {
+    const card = document.createElement('div');
+    card.className = 'speaking-task-card';
+    card.style.cssText = 'background:var(--bg-alt);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:16px;';
+    card.innerHTML = `
+      <div style="font-weight:700;font-size:13px;color:var(--practice-coral);margin-bottom:6px;">${task.label || 'Práctica de speaking'}</div>
+      <p style="font-size:14px;line-height:1.6;margin-bottom:16px;">${task.prompt}</p>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+        <button type="button" class="btn btn-accent" style="border:none;cursor:pointer;" data-role="rec-btn">🎙️ Empezar a grabar</button>
+        <span data-role="timer" style="font-size:13px;color:var(--muted);"></span>
+      </div>
+      <div data-role="transcript" style="min-height:40px;font-size:14px;line-height:1.6;padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--line);color:var(--muted);font-style:italic;">Tu transcripción va a aparecer aquí mientras hablas...</div>
+      <div data-role="result" style="margin-top:14px;"></div>
+    `;
+    list.appendChild(card);
+    wireSpeakingTask(card, task);
+  });
+}
+
+function wireSpeakingTask(card, task){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recBtn = card.querySelector('[data-role="rec-btn"]');
+  const timerEl = card.querySelector('[data-role="timer"]');
+  const transcriptEl = card.querySelector('[data-role="transcript"]');
+  const resultEl = card.querySelector('[data-role="result"]');
+
+  let recognition = null;
+  let recording = false;
+  let startTime = null;
+  let timerInterval = null;
+  let finalTranscript = '';
+
+  function fmtTime(sec){
+    const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+    return `${m}:${String(s).padStart(2,'0')}`;
+  }
+
+  function startRecording(){
+    recognition = new SR();
+    recognition.lang = 'en-US';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    finalTranscript = '';
+    transcriptEl.style.fontStyle = 'normal';
+    transcriptEl.style.color = 'var(--ink)';
+    transcriptEl.textContent = 'Escuchando...';
+    resultEl.innerHTML = '';
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      for(let i = event.resultIndex; i < event.results.length; i++){
+        const chunk = event.results[i][0].transcript;
+        if(event.results[i].isFinal) finalTranscript += chunk + ' ';
+        else interim += chunk;
+      }
+      transcriptEl.textContent = (finalTranscript + interim).trim() || 'Escuchando...';
+    };
+
+    recognition.onerror = () => {
+      // Algunos navegadores mandan 'no-speech' si hay silencio — no es un
+      // error fatal, dejamos que el estudiante siga o pare manualmente.
+    };
+
+    recognition.onend = () => {
+      if(recording){
+        // El navegador a veces corta la sesión sola tras una pausa larga;
+        // si el estudiante no ha dado "Detener", la reiniciamos.
+        try { recognition.start(); } catch(_) {}
+      }
+    };
+
+    recognition.start();
+    recording = true;
+    startTime = Date.now();
+    recBtn.textContent = '⏹ Detener grabación';
+    timerInterval = setInterval(() => {
+      timerEl.textContent = fmtTime((Date.now() - startTime) / 1000);
+    }, 250);
+  }
+
+  async function stopRecording(){
+    recording = false;
+    clearInterval(timerInterval);
+    if(recognition){
+      try { recognition.stop(); } catch(_) {}
+    }
+    const durationSeconds = (Date.now() - startTime) / 1000;
+    recBtn.disabled = true;
+    recBtn.textContent = 'Calificando...';
+
+    const { data, error } = await supabaseClient.functions.invoke('submit-speaking-attempt', {
+      body: {
+        enrollment_id: CURRENT_ENROLLMENT_ID,
+        module_id: CURRENT_MODULE_ID,
+        task_id: task.id,
+        transcript: finalTranscript.trim(),
+        duration_seconds: durationSeconds,
+      },
+    });
+
+    recBtn.disabled = false;
+    recBtn.textContent = '🎙️ Grabar de nuevo';
+
+    if(error || data?.error){
+      resultEl.innerHTML = `<p style="color:var(--wine);font-size:13px;">No se pudo calificar: ${data?.error || error.message}</p>`;
+      return;
+    }
+
+    resultEl.innerHTML = `
+      <div class="quiz-result-banner ${data.passed ? 'pass' : 'fail'}" style="margin-top:6px;">
+        <div class="score">${data.score}/100</div>
+        <p style="margin-top:8px;font-size:13.5px;">
+          Hablaste ${Math.round(data.duration_seconds)}s (meta: ${data.min_seconds}s) · ${data.words} palabras (meta: ${data.min_words}) ·
+          mencionaste ${data.matched_keywords.length} de ${data.total_keywords} palabras/frases clave esperadas.
+        </p>
+        ${data.matched_keywords.length ? `<p style="margin-top:6px;font-size:12.5px;color:var(--muted);">Detectadas: ${data.matched_keywords.join(', ')}</p>` : ''}
+        <p style="margin-top:10px;font-size:12.5px;color:var(--muted);">Esto es práctica formativa — no bloquea tu avance. Puedes grabar de nuevo cuando quieras.</p>
+      </div>
+    `;
+  }
+
+  recBtn.addEventListener('click', () => {
+    if(!recording) startRecording();
+    else stopRecording();
+  });
 }
 
 function renderClosing(c, form){
