@@ -357,6 +357,11 @@ footer{padding:70px 0 50px;border-top:1px solid var(--line);}
 .reading-passage{border:1px solid var(--line);border-radius:16px;padding:28px 30px;margin:18px 0 28px;background:linear-gradient(160deg,rgba(33,29,24,.035),transparent);font-family:'Fraunces',serif;font-size:16px;line-height:1.85;}
 .reading-passage .passage-tag{display:block;font-family:'Space Grotesk',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
 
+/* Parte 4/7 (texto con espacios) y Simulacro final: pasaje con espacio activo resaltado */
+.cloze-passage{border:1px solid var(--line);border-radius:16px;padding:24px 26px;margin:14px 0;background:linear-gradient(160deg,rgba(33,29,24,.035),transparent);font-family:'Fraunces',serif;font-size:16px;line-height:1.85;}
+.cloze-passage mark{background:color-mix(in srgb, var(--accent) 30%, transparent);color:var(--ink);padding:1px 6px;border-radius:6px;font-weight:700;font-style:normal;}
+.sim-part-tag{display:inline-block;font-family:'Space Grotesk',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold, var(--accent));font-weight:700;margin-bottom:10px;}
+
 .tip-box{border-radius:14px;padding:16px 20px;margin:20px 0;background:color-mix(in srgb, var(--steel) 10%, transparent);font-size:13.5px;color:var(--ink);display:flex;gap:12px;align-items:flex-start;line-height:1.65;}
 .tip-box .icon{flex-shrink:0;}
 
