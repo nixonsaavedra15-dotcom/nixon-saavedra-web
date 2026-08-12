@@ -138,6 +138,8 @@ section.tight{padding:70px 0;}
 .course-card p{color:var(--muted);font-size:13.5px;margin-bottom:20px;}
 .course-card .meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;}
 .course-card .status{color:var(--ink);font-weight:600;}
+.course-card .status-live{color:var(--steel);}
+.course-card .status-live::before{content:"● ";font-size:9px;}
 
 /* timeline */
 .timeline-v{border-left:1px solid var(--line);padding-left:34px;display:flex;flex-direction:column;gap:34px;}
@@ -178,6 +180,31 @@ section.tight{padding:70px 0;}
 .product-card .price{font-family:'Fraunces',serif;font-size:19px;}
 .status-badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:20px;background:var(--bg-alt);color:var(--muted);}
 .buy-btn{display:block;text-align:center;width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:600;letter-spacing:.3px;border:none;}
+
+/* Botones de compartir por curso (WhatsApp + redes) — comparten la
+   imagen y el texto del curso, no la URL de la página. */
+.share-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.share-btn{flex:1;min-width:120px;padding:9px 10px;border-radius:9px;font-size:12px;font-weight:600;letter-spacing:.2px;cursor:pointer;transition:.2s;border:1px solid var(--line);background:transparent;color:var(--ink);}
+.share-btn:hover{border-color:var(--accent);color:var(--accent);}
+.share-btn.share-whatsapp{border-color:#25D366;color:#128C4A;}
+.share-btn.share-whatsapp:hover{background:#25D366;color:#fff;border-color:#25D366;}
+
+/* Botón flotante de WhatsApp (página de contacto) */
+.whatsapp-fab{position:fixed;right:24px;bottom:24px;z-index:80;display:flex;align-items:center;gap:10px;background:#25D366;color:#fff;text-decoration:none;padding:14px;border-radius:999px;box-shadow:0 8px 24px rgba(37,211,102,.4);transition:padding .25s ease,box-shadow .25s ease;overflow:hidden;}
+.whatsapp-fab-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;}
+.whatsapp-fab-icon::before{content:"";position:absolute;inset:-6px;border-radius:999px;background:#25D366;opacity:.55;animation:wa-pulse 2.2s ease-out infinite;z-index:-1;}
+.whatsapp-fab-label{max-width:0;white-space:nowrap;opacity:0;font-size:14px;font-weight:600;transition:max-width .3s ease,opacity .25s ease;}
+.whatsapp-fab:hover{box-shadow:0 10px 30px rgba(37,211,102,.55);}
+.whatsapp-fab:hover .whatsapp-fab-label{max-width:220px;opacity:1;margin-right:4px;}
+@keyframes wa-pulse{
+  0%{transform:scale(1);opacity:.55;}
+  70%{transform:scale(1.7);opacity:0;}
+  100%{transform:scale(1.7);opacity:0;}
+}
+@media (max-width:640px){
+  .whatsapp-fab{right:16px;bottom:16px;}
+  .whatsapp-fab-label{display:none;}
+}
 
 /* form */
 .form-grid{max-width:560px;display:flex;flex-direction:column;gap:20px;}

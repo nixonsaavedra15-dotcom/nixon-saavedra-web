@@ -82,7 +82,7 @@
   </div>
 </section>
 
-<section class="tight">
+<section class="tight" id="cursos">
   <div class="wrap">
     <div class="split-head reveal">
       <div><div class="num-tag">— Campus</div><h2>Cursos</h2></div>
@@ -91,46 +91,38 @@
     <div class="product-grid reveal">
 
       <div class="product-card">
-        <div class="thumb"></div>
-        <div class="body">
-          <span class="cat cat-en">Inglés</span>
-          <h3>Cambridge Ready</h3>
-          <p>Preparación para exámenes internacionales de Cambridge.</p>
-          <div class="price-row"><span class="price">$ —</span><span class="status-badge">Próximamente</span></div>
-          <button class="buy-btn btn-disabled" disabled onclick="iniciarCompra('cambridge-ready', 0, 'Cambridge Ready')">Conectar pago (ePayco)</button>
-        </div>
-      </div>
-
-      <div class="product-card">
-        <div class="thumb"></div>
+        <div class="thumb" id="thumb-ia-educadores"></div>
         <div class="body">
           <span class="cat cat-ai">IA</span>
           <h3>IA para Educadores</h3>
           <p>Herramientas de inteligencia artificial para el aula.</p>
           <div class="price-row"><span class="price">$420.000</span><span class="status-badge">Modo prueba</span></div>
           <button class="buy-btn btn-accent" onclick="iniciarCompra('ia-educadores', 420000, 'IA para Educadores')">Comprar (modo prueba)</button>
+          <div class="share-row" data-course="ia-educadores" data-title="IA para Educadores" data-desc="Herramientas de inteligencia artificial aplicadas al diseño de clases, contenido y evaluación." data-price="$420.000" data-img="assets/img/curso-ia-educadores-cover.jpg"></div>
         </div>
       </div>
 
       <div class="product-card">
-        <div class="thumb"></div>
+        <div class="thumb" id="thumb-ingles-a2"></div>
+        <div class="body">
+          <span class="cat cat-en">Inglés</span>
+          <h3>Cambridge A2 Key (KET)</h3>
+          <p>Preparación completa para el examen Cambridge A2 Key: reading, writing, listening y speaking por partes reales del examen, con simulacro y certificado.</p>
+          <div class="price-row"><span class="price">$420.000</span><span class="status-badge">Modo prueba</span></div>
+          <button class="buy-btn btn-accent" onclick="iniciarCompra('ingles-a2', 420000, 'Cambridge A2 Key (KET)')">Comprar (modo prueba)</button>
+          <div class="share-row" data-course="ingles-a2" data-title="Cambridge A2 Key (KET)" data-desc="Preparación completa para el examen Cambridge A2 Key (KET): reading, writing, listening y speaking organizados por las partes reales del examen, con simulacro final y certificado." data-price="$420.000" data-img="assets/img/curso-cambridge-a2-key-cover.jpg"></div>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="thumb" id="thumb-pre-icfes"></div>
         <div class="body">
           <span class="cat cat-edu">Educación</span>
           <h3>Pre-ICFES</h3>
           <p>Las 7 partes de la prueba de inglés del ICFES, vocabulario esencial y un simulacro final — módulo por módulo hasta tu certificado.</p>
           <div class="price-row"><span class="price">$420.000</span><span class="status-badge">Modo prueba</span></div>
           <button class="buy-btn btn-accent" onclick="iniciarCompra('pre-icfes', 420000, 'Pre-ICFES')">Comprar (modo prueba)</button>
-        </div>
-      </div>
-
-      <div class="product-card">
-        <div class="thumb"></div>
-        <div class="body">
-          <span class="cat cat-en">Inglés</span>
-          <h3>Inglés A2</h3>
-          <p>40 horas de curso: gramática, writing, reading, listening y speaking, con examen final — módulo por módulo hasta tu certificado.</p>
-          <div class="price-row"><span class="price">$420.000</span><span class="status-badge">Modo prueba</span></div>
-          <button class="buy-btn btn-accent" onclick="iniciarCompra('ingles-a2', 420000, 'Inglés A2')">Comprar (modo prueba)</button>
+          <div class="share-row" data-course="pre-icfes" data-title="Pre-ICFES" data-desc="Las 7 partes de la prueba de inglés del ICFES —vocabulario, use of language, lectura literal e inferencial— con simulacro final y certificado." data-price="$420.000" data-img="assets/img/curso-pre-icfes-cover.jpg"></div>
         </div>
       </div>
 
@@ -169,6 +161,7 @@
 <script src="assets/supabase-config.js"></script>
 <script src="assets/auth.js"></script>
 <script src="assets/checkout.js"></script>
+<script src="assets/share-course.js"></script>
 <script src="assets/script.js"></script>
 </body>
 </html>
