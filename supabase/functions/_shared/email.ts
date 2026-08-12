@@ -2,33 +2,30 @@
 // _shared/email.ts — envío de correos con marca (Campus Saavedra)
 // ============================================================
 // Módulo compartido por todas las Edge Functions que necesitan
-// mandar un correo. Envía por SMTP (pensado para el correo del
-// dominio en Hostinger: notificaciones@nixonsaavedraescritor.com)
-// y envuelve cada mensaje en una plantilla HTML con los colores y
+// mandar un correo. Envía a través de la API de Resend (HTTP) y
+// envuelve cada mensaje en una plantilla HTML con los colores y
 // tipografías del sitio, para que se vea profesional y coherente
 // en cualquier bandeja de entrada.
 //
+// Nota: antes se enviaba por SMTP (Hostinger) usando la librería
+// denomailer, pero tenía un bug irresoluble corriendo dentro del
+// runtime de Supabase Edge Functions (Deno) que corrompía el cuerpo
+// del mensaje y lo hacía llegar como texto crudo en vez de HTML.
+// Por eso se migró a Resend, que envía por HTTP y no tiene ese problema.
+//
 // Secrets que necesita (Supabase → Project Settings → Edge
 // Functions → Secrets, o `supabase secrets set`):
-//   SMTP_HOST   → smtp.hostinger.com
-//   SMTP_PORT   → 465
-//   SMTP_USER   → notificaciones@nixonsaavedraescritor.com
-//   SMTP_PASS   → la contraseña de ese correo
-//   FROM_EMAIL  → notificaciones@nixonsaavedraescritor.com (opcional, usa SMTP_USER si no se define)
-//   FROM_NAME   → Nixon Saavedra · Campus (opcional)
-//   REPLY_TO    → nixonsaavedra15@gmail.com (opcional — a dónde llegan las respuestas)
-//   SITE_URL    → https://nixonsaavedraescritor.com
+//   RESEND_API_KEY → la API key de tu cuenta en resend.com
+//   FROM_EMAIL     → notificaciones@nixonsaavedraescritor.com (opcional)
+//   FROM_NAME      → Nixon Saavedra · Campus (opcional)
+//   REPLY_TO       → nixonsaavedra15@gmail.com (opcional — a dónde llegan las respuestas)
+//   SITE_URL       → https://nixonsaavedraescritor.com
 //
 // Ver supabase/CORREOS-SETUP.md para la guía paso a paso completa.
 // ============================================================
 
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-
-const SMTP_HOST = Deno.env.get("SMTP_HOST") ?? "smtp.hostinger.com";
-const SMTP_PORT = Number(Deno.env.get("SMTP_PORT") ?? "465");
-const SMTP_USER = Deno.env.get("SMTP_USER") ?? "";
-const SMTP_PASS = Deno.env.get("SMTP_PASS") ?? "";
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? SMTP_USER;
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "notificaciones@nixonsaavedraescritor.com";
 const FROM_NAME = Deno.env.get("FROM_NAME") ?? "Nixon Saavedra · Campus";
 const REPLY_TO = Deno.env.get("REPLY_TO") ?? "";
 export const SITE_URL = Deno.env.get("SITE_URL") ?? "https://nixonsaavedraescritor.com";
@@ -140,9 +137,9 @@ export function brandEmailShell(opts: {
 }
 
 /**
- * Envía un correo por SMTP (Hostinger). Lanza un error legible si faltan
- * credenciales, para que las Edge Functions puedan devolver un mensaje
- * claro en vez de fallar en silencio.
+ * Envía un correo a través de la API de Resend. Lanza un error legible si
+ * falta la API key o si Resend responde con error, para que las Edge
+ * Functions puedan devolver un mensaje claro en vez de fallar en silencio.
  */
 export async function sendBrandedEmail(params: {
   to: string;
@@ -152,20 +149,11 @@ export async function sendBrandedEmail(params: {
   ctaText?: string;
   ctaUrl?: string;
 }): Promise<void> {
-  if (!SMTP_USER || !SMTP_PASS) {
+  if (!RESEND_API_KEY) {
     throw new Error(
-      "Faltan las credenciales SMTP (SMTP_USER / SMTP_PASS). Configúralas como secrets en Supabase — ver supabase/CORREOS-SETUP.md."
+      "Falta el secret RESEND_API_KEY. Configúralo en Supabase → Edge Functions → Secrets — ver supabase/CORREOS-SETUP.md."
     );
   }
-
-  const client = new SMTPClient({
-    connection: {
-      hostname: SMTP_HOST,
-      port: SMTP_PORT,
-      tls: true,
-      auth: { username: SMTP_USER, password: SMTP_PASS },
-    },
-  });
 
   const html = brandEmailShell({
     preheader: params.preheader,
@@ -174,16 +162,23 @@ export async function sendBrandedEmail(params: {
     ctaUrl: params.ctaUrl,
   });
 
-  try {
-    await client.send({
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
-      to: params.to,
+      to: [params.to],
       subject: params.subject,
-      content: "auto",
       html,
-      ...(REPLY_TO ? { replyTo: REPLY_TO } : {}),
-    });
-  } finally {
-    await client.close();
+      ...(REPLY_TO ? { reply_to: REPLY_TO } : {}),
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Resend respondió ${res.status}: ${errText}`);
   }
 }

@@ -1,33 +1,35 @@
 # Correos con marca — guía de configuración
 
-Esto conecta el Campus con tu correo `notificaciones@nixonsaavedraescritor.com`
-(Hostinger) para que **todos** los correos automáticos —invitación, compra
-confirmada, curso asignado gratis, recuperar contraseña, respuesta de
-soporte, certificado emitido— salgan con el nombre y los colores del sitio,
-en vez del correo genérico (y poco confiable) que manda Supabase por defecto.
+Esto conecta el Campus con **Resend** (resend.com) para que **todos** los
+correos automáticos —invitación, compra confirmada, curso asignado gratis,
+recuperar contraseña, respuesta de soporte, certificado emitido— salgan con
+el nombre y los colores del sitio, en vez del correo genérico (y poco
+confiable) que manda Supabase por defecto.
 
 No necesitas tocar nada en **Authentication → Email Templates** de Supabase:
 las funciones nuevas generan sus propios enlaces y mandan su propio correo,
 así que ese sistema deja de usarse por completo para estos flujos.
 
+> **Nota histórica:** al principio se envió por SMTP directo (Hostinger) con
+> la librería `denomailer`. Esa librería tenía un bug irresoluble corriendo
+> dentro del runtime de Supabase Edge Functions que corrompía el cuerpo del
+> correo (llegaba como texto/MIME crudo en vez de HTML renderizado, "como un
+> virus"). Por eso se migró por completo a Resend, que envía por HTTP y no
+> tiene ese problema — confirmado funcionando en todas las funciones.
+
 ---
 
-## 1. Datos SMTP de Hostinger
+## 1. Cuenta de Resend y dominio verificado
 
-Estos son los datos estándar de Hostinger para el correo de tu dominio
-(no hace falta que me des la contraseña, solo úsala tú al configurar el secret):
-
-| Campo | Valor |
-|---|---|
-| Host SMTP | `smtp.hostinger.com` |
-| Puerto | `465` (SSL) |
-| Usuario | `notificaciones@nixonsaavedraescritor.com` |
-| Contraseña | la que pusiste al crear ese correo en hPanel |
-
-Antes de seguir, te recomiendo probar esos datos en cualquier cliente de
-correo (Outlook, Thunderbird, o el propio webmail de Hostinger) para
-confirmar que el envío funciona — así descartamos problemas de credenciales
-antes de tocar Supabase.
+1. Crea una cuenta en [resend.com](https://resend.com).
+2. Ve a **Domains → Add Domain** y agrega `nixonsaavedraescritor.com`.
+3. Resend te da unos registros DNS (DKIM tipo TXT en `resend._domainkey`, y
+   un subdominio `send` con MX + TXT para SPF). Agrégalos en tu proveedor de
+   DNS (en este caso Hostinger, en hPanel → Dominios → tu dominio → DNS).
+4. Espera a que Resend marque el dominio como **Verified** (puede tardar
+   desde minutos hasta un par de horas según el DNS).
+5. Ve a **API Keys → Create API Key** y copia la clave — la necesitas en el
+   siguiente paso.
 
 ## 2. Configurar los "secrets" en Supabase
 
@@ -35,10 +37,7 @@ Ve a tu proyecto → **Project Settings → Edge Functions → Secrets** (o usa 
 CLI si la tienes instalada) y agrega:
 
 ```
-SMTP_HOST=smtp.hostinger.com
-SMTP_PORT=465
-SMTP_USER=notificaciones@nixonsaavedraescritor.com
-SMTP_PASS=la-contraseña-de-ese-correo
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx
 FROM_EMAIL=notificaciones@nixonsaavedraescritor.com
 FROM_NAME=Nixon Saavedra · Campus
 REPLY_TO=nixonsaavedra15@gmail.com
@@ -49,10 +48,7 @@ CERTIFICATE_WEBHOOK_SECRET=inventa-una-clave-larga-y-aleatoria-aqui
 Con la CLI, desde la carpeta `sitio/`:
 
 ```bash
-supabase secrets set SMTP_HOST=smtp.hostinger.com
-supabase secrets set SMTP_PORT=465
-supabase secrets set SMTP_USER=notificaciones@nixonsaavedraescritor.com
-supabase secrets set SMTP_PASS="la-contraseña-de-ese-correo"
+supabase secrets set RESEND_API_KEY="re_xxxxxxxxxxxxxxxxxxxxxxxx"
 supabase secrets set FROM_EMAIL=notificaciones@nixonsaavedraescritor.com
 supabase secrets set FROM_NAME="Nixon Saavedra · Campus"
 supabase secrets set REPLY_TO=nixonsaavedra15@gmail.com
@@ -61,7 +57,9 @@ supabase secrets set CERTIFICATE_WEBHOOK_SECRET="inventa-una-clave-larga-y-aleat
 ```
 
 `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` ya deberían existir de antes
-(se usan desde que montaste `epayco-webhook`).
+(se usan desde que montaste `epayco-webhook`). `FROM_EMAIL` debe ser una
+dirección del dominio verificado en Resend (paso 1) — si no, los envíos
+fallan.
 
 ## 3. Desplegar las funciones
 
@@ -148,14 +146,15 @@ tenga que hacer nada.
 
 Si algún paso no manda el correo, revisa los logs de la función en Supabase
 → **Edge Functions → (nombre de la función) → Logs** — ahí queda el error
-exacto (credenciales SMTP incorrectas, dominio no verificado, etc.).
+exacto (`RESEND_API_KEY` faltante, dominio no verificado en Resend, etc.).
+También puedes revisar el historial de envíos directamente en
+**resend.com → Emails**, que muestra el estado de cada correo (entregado,
+rebotado, etc.).
 
 ## 7. Nota sobre entregabilidad (que no caiga en spam)
 
-Hostinger ya configura SPF/DKIM básicos para los correos de sus buzones de
-forma automática cuando el dominio usa sus servidores de nombre (DNS). Como
-tu sitio vive en GitHub Pages y el correo en Hostinger, confirma en hPanel →
-Correo → tu dominio → "Estado del DNS" que SPF y DKIM aparezcan como
-verificados. Si no lo están, hPanel te da los registros TXT exactos para
-pegar donde administras el DNS del dominio — avísame si llegas a ese punto y
-te ayudo a interpretarlos.
+Con el dominio verificado en Resend (paso 1), SPF y DKIM quedan correctos
+automáticamente para los correos enviados desde `FROM_EMAIL`. Si algún
+correo cae en spam de todos modos, revisa en Resend → Domains que el estado
+siga en "Verified" (los registros DNS a veces se editan sin querer en el
+proveedor del dominio).

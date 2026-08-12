@@ -5,7 +5,7 @@
 // La función verifica que el pago sea real (no falsificado), y si fue
 // aprobado, crea la cuenta del estudiante (o la reutiliza), lo matricula
 // en el curso comprado, y le envía un correo de compra confirmada con la
-// marca del sitio (vía SMTP propio — ver _shared/email.ts y
+// marca del sitio (vía Resend — ver _shared/email.ts y
 // supabase/CORREOS-SETUP.md), no el correo genérico de Supabase.
 //
 // Dónde se configura en ePayco: Panel ePayco → Configuración → Integraciones
@@ -18,12 +18,11 @@
 //   EPAYCO_P_CUST_ID_CLIENTE     → tu P_CUST_ID_CLIENTE de ePayco
 //   EPAYCO_P_KEY                 → tu P_KEY de ePayco (la llave privada de validación)
 //   SITE_URL                     → https://nixonsaavedraescritor.com
-//   + las variables SMTP_* de _shared/email.ts (ver CORREOS-SETUP.md)
+//   RESEND_API_KEY               → ver supabase/CORREOS-SETUP.md
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.203.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -33,12 +32,10 @@ const SITE_URL = Deno.env.get("SITE_URL") ?? "https://nixonsaavedraescritor.com"
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-// ---- Envío de correo con marca (copia local — ver _shared/email.ts para la versión documentada) ----
-const SMTP_HOST = Deno.env.get("SMTP_HOST") ?? "smtp.hostinger.com";
-const SMTP_PORT = Number(Deno.env.get("SMTP_PORT") ?? "465");
-const SMTP_USER = Deno.env.get("SMTP_USER") ?? "";
-const SMTP_PASS = Deno.env.get("SMTP_PASS") ?? "";
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? SMTP_USER;
+// ---- Envío de correo con marca, vía la API de Resend (copia local — ver
+// _shared/email.ts para la versión documentada) ----
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "notificaciones@nixonsaavedraescritor.com";
 const FROM_NAME = Deno.env.get("FROM_NAME") ?? "Nixon Saavedra · Campus";
 const REPLY_TO = Deno.env.get("REPLY_TO") ?? "";
 const BRAND = {
@@ -65,15 +62,24 @@ function brandEmailShell(opts: { preheader?: string; bodyHtml: string; ctaText?:
   </td></tr></table></body></html>`;
 }
 async function sendBrandedEmail(params: { to: string; subject: string; preheader?: string; bodyHtml: string; ctaText?: string; ctaUrl?: string }): Promise<void> {
-  if (!SMTP_USER || !SMTP_PASS) {
-    throw new Error("Faltan las credenciales SMTP (SMTP_USER / SMTP_PASS). Configúralas como secrets en Supabase.");
+  if (!RESEND_API_KEY) {
+    throw new Error("Falta el secret RESEND_API_KEY. Configúralo en Supabase → Edge Functions → Secrets.");
   }
-  const client = new SMTPClient({ connection: { hostname: SMTP_HOST, port: SMTP_PORT, tls: true, auth: { username: SMTP_USER, password: SMTP_PASS } } });
   const html = brandEmailShell({ preheader: params.preheader, bodyHtml: params.bodyHtml, ctaText: params.ctaText, ctaUrl: params.ctaUrl });
-  try {
-    await client.send({ from: `${FROM_NAME} <${FROM_EMAIL}>`, to: params.to, subject: params.subject, content: "auto", html, ...(REPLY_TO ? { replyTo: REPLY_TO } : {}) });
-  } finally {
-    await client.close();
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: [params.to],
+      subject: params.subject,
+      html,
+      ...(REPLY_TO ? { reply_to: REPLY_TO } : {}),
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Resend respondió ${res.status}: ${errText}`);
   }
 }
 // ---- fin bloque de correo ----

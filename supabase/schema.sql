@@ -266,5 +266,5 @@ insert into public.courses (slug, title, description, price, category)
 values
   ('pre-icfes', 'Pre-ICFES', 'Preparación para el examen ICFES.', 420000, 'educacion'),
   ('cambridge-ready', 'Cambridge Ready', 'Preparación intensiva para exámenes internacionales de Cambridge.', 0, 'ingles'),
-  ('ia-educadores', 'IA para Educadores', 'Herramientas de inteligencia artificial aplicadas al aula.', 0, 'ia')
+  ('ia-educadores', 'IA para Educadores', 'Herramientas de inteligencia artificial aplicadas al aula.', 420000, 'ia')
 on conflict (slug) do nothing;
