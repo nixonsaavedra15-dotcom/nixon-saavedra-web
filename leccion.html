@@ -205,7 +205,7 @@ function renderQuizForm(quiz, questions, choices, enrollmentId, moduleId, stage,
             <div class="q-num">Pregunta ${i + 1} de ${questions.length}</div>
             <div class="q-prompt">${q.prompt}</div>
             ${choices.filter(c => c.question_id === q.id).map(c => `
-              <label class="quiz-choice" data-question="${q.id}" data-choice="${c.id}">
+              <label class="quiz-choice${c.choice_text.includes('<svg') ? ' pic-choice' : ''}" data-question="${q.id}" data-choice="${c.id}">
                 <input type="radio" name="q-${q.id}" value="${c.id}" required>
                 <span>${c.choice_text}</span>
               </label>
@@ -389,11 +389,11 @@ function renderWelcome(c, L){
         </div>
       ` : ''}
       <div class="guide-chip-grid">
-        <div class="guide-chip"><div class="num">1</div><div>Dos lecturas explicadas paso a paso</div></div>
-        <div class="guide-chip"><div class="num">2</div><div>Quiz corto para confirmar que quedó claro</div></div>
-        <div class="guide-chip"><div class="num">3</div><div>Lección interactiva con infografía</div></div>
-        <div class="guide-chip"><div class="num">4</div><div>Lectura de práctica con casos reales</div></div>
-        <div class="guide-chip"><div class="num">5</div><div>Formulario final que sella lo aprendido</div></div>
+        <div class="guide-chip"><div class="num">1</div><div>Empezamos con calma: dos lecturas cortas para que las bases queden firmes, sin afán</div></div>
+        <div class="guide-chip"><div class="num">2</div><div>Un quiz breve — no para presionarte, sino para confirmar juntos que ya quedó claro</div></div>
+        <div class="guide-chip"><div class="num">3</div><div>Si aprendes mejor viendo que leyendo, aquí repasamos lo mismo con imágenes</div></div>
+        <div class="guide-chip"><div class="num">4</div><div>Un caso real, para que veas cómo se usa esto fuera del examen</div></div>
+        <div class="guide-chip"><div class="num">5</div><div>Cierras resumiendo con tus propias palabras — así es como de verdad se queda grabado</div></div>
       </div>
       <button class="btn btn-accent" style="border:none;cursor:pointer;margin-top:28px;" onclick="advanceStep('reading1')">Comenzar la lección →</button>
     </div>

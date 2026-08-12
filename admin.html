@@ -245,6 +245,9 @@ async function loadStudents(){
               <button class="mini-btn ${en.status === 'cancelled' ? '' : 'danger'}" onclick="toggleEnrollment('${en.id}','${en.status}', this)">
                 ${en.status === 'cancelled' ? 'Reactivar' : 'Desactivar'}
               </button>` : ''}
+            <button class="mini-btn danger" onclick="deleteEnrollment('${en.id}', '${(en.course?.title || 'este curso').replace(/'/g, "\\'")}', this)">
+              Eliminar
+            </button>
           </div>
         </div>
       `).join('') : '<div class="enroll-row"><span class="meta">Sin cursos todavía.</span></div>'}
@@ -262,6 +265,25 @@ async function toggleEnrollment(enrollmentId, currentStatus, btn){
   const { error } = await supabaseClient.from('enrollments').update({ status: newStatus }).eq('id', enrollmentId);
   if(error){
     alert('No se pudo actualizar: ' + error.message);
+  }
+  await loadStudents();
+  await loadStats();
+}
+
+// Elimina la matrícula por completo (progreso, intentos de quiz, reflexiones
+// de cierre y certificado quedan borrados en cascada). Pensado para limpiar
+// matrículas de prueba — es permanente, por eso pide confirmación explícita.
+async function deleteEnrollment(enrollmentId, courseTitle, btn){
+  const ok = confirm(`¿Eliminar por completo la matrícula de "${courseTitle}"?\n\nEsto borra también todo su progreso, calificaciones y certificado (si tiene). No se puede deshacer.`);
+  if(!ok) return;
+  btn.disabled = true;
+  btn.textContent = 'Eliminando...';
+  const { error } = await supabaseClient.from('enrollments').delete().eq('id', enrollmentId);
+  if(error){
+    alert('No se pudo eliminar: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = 'Eliminar';
+    return;
   }
   await loadStudents();
   await loadStats();
@@ -532,7 +554,16 @@ async function onAssignSubmit(e){
   submitBtn.textContent = 'Inscribir gratis';
 
   if(error || data?.error){
-    msgEl.textContent = 'No se pudo inscribir: ' + (data?.error || error.message);
+    let detail = data?.error || error.message;
+    // supabase-js solo da el mensaje genérico "non-2xx status code" —
+    // el detalle real va en el cuerpo de la respuesta de la función.
+    if(error?.context){
+      try {
+        const body = await error.context.clone().json();
+        if(body?.error) detail = body.error;
+      } catch(_) { /* si no se puede leer, nos quedamos con el mensaje genérico */ }
+    }
+    msgEl.textContent = 'No se pudo inscribir: ' + detail;
     msgEl.className = 'auth-msg show err';
     return;
   }

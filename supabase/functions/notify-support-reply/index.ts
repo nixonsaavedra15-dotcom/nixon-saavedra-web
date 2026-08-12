@@ -62,7 +62,7 @@ async function sendBrandedEmail(params: { to: string; subject: string; preheader
   const client = new SMTPClient({ connection: { hostname: SMTP_HOST, port: SMTP_PORT, tls: true, auth: { username: SMTP_USER, password: SMTP_PASS } } });
   const html = brandEmailShell({ preheader: params.preheader, bodyHtml: params.bodyHtml, ctaText: params.ctaText, ctaUrl: params.ctaUrl });
   try {
-    await client.send({ from: `${FROM_NAME} <${FROM_EMAIL}>`, to: params.to, subject: params.subject, html, ...(REPLY_TO ? { replyTo: REPLY_TO } : {}) });
+    await client.send({ from: `${FROM_NAME} <${FROM_EMAIL}>`, to: params.to, subject: params.subject, content: "auto", html, ...(REPLY_TO ? { replyTo: REPLY_TO } : {}) });
   } finally {
     await client.close();
   }

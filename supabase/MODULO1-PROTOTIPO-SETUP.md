@@ -30,8 +30,12 @@ En Supabase → **SQL Editor** → New query → pega y **Run**:
 4. `supabase/modules2-7-content.sql` — la misma lección multi-paso
    completa (2 lecturas, interactivo, práctica, cierre, 2 quizzes)
    para los módulos "Parte 2" a "Parte 7".
+5. `supabase/fix-tone-and-intro.sql` — corrige el tono de la guía de
+   bienvenida (menos "lista de pasos", más explicación de un tutor) y
+   reescribe el contenido de "Introducción" completo y con el dato
+   correcto (45 preguntas).
 
-Los cuatro son seguros de correr más de una vez.
+Los cinco son seguros de correr más de una vez.
 
 ## 2. Despliega 2 funciones nuevas (Via Editor, igual que las de correo)
 

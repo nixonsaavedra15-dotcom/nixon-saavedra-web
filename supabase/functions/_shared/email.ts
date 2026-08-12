@@ -179,6 +179,7 @@ export async function sendBrandedEmail(params: {
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
       to: params.to,
       subject: params.subject,
+      content: "auto",
       html,
       ...(REPLY_TO ? { replyTo: REPLY_TO } : {}),
     });
