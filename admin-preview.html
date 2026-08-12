@@ -184,9 +184,10 @@ async function appendQuizPreview(root, moduleId, stage, label){
   const { data: questions } = await supabaseClient.from('quiz_questions').select('*').eq('quiz_id', quiz.id).order('order_index');
   if(!questions || !questions.length) return;
 
-  // Admin sí puede leer quiz_choices completa (con is_correct y feedback) —
-  // la política RLS "Admin ve todas las opciones" ya lo permite.
+  // Admin sí puede leer quiz_choices y quiz_text_answers completas —
+  // las políticas RLS "Admin ve..." ya lo permiten.
   const { data: choices } = await supabaseClient.from('quiz_choices').select('*').in('question_id', questions.map(q => q.id)).order('order_index');
+  const { data: textAnswers } = await supabaseClient.from('quiz_text_answers').select('*').in('question_id', questions.map(q => q.id));
 
   const section = document.createElement('div');
   section.className = 'preview-section';
@@ -197,7 +198,16 @@ async function appendQuizPreview(root, moduleId, stage, label){
       <div class="pq-block">
         ${q.audio_url ? `<audio class="preview-audio" controls src="${q.audio_url}"></audio>` : ''}
         <div style="font-weight:600;margin-bottom:8px;">${i+1}. ${q.prompt}</div>
-        ${(choices || []).filter(c => c.question_id === q.id).map(c => `
+        ${q.answer_type === 'text' ? (() => {
+          const t = (textAnswers || []).find(ta => ta.question_id === q.id);
+          return `
+            <div class="pq-choice correct">
+              ✓ Respuesta(s) aceptada(s): ${esc((t?.accepted_answers || []).join(' / '))}
+              ${t?.feedback ? `<div class="pq-feedback">${esc(t.feedback)}</div>` : ''}
+            </div>
+            <p style="font-size:12px;color:var(--muted);margin-top:6px;">El estudiante ve una casilla de texto vacía, sin opciones.</p>
+          `;
+        })() : (choices || []).filter(c => c.question_id === q.id).map(c => `
           <div class="pq-choice ${c.is_correct ? 'correct' : ''}">
             ${c.is_correct ? '✓ ' : ''}${c.choice_text}
             ${c.feedback ? `<div class="pq-feedback">${esc(c.feedback)}</div>` : ''}

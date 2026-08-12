@@ -80,7 +80,7 @@ serve(async (req) => {
     const enrollmentId = body.enrollment_id as string;
     const moduleId = body.module_id as string;
     const stage = (body.stage as string) || "main";
-    const answers = (body.answers ?? []) as { question_id: string; choice_id: string }[];
+    const answers = (body.answers ?? []) as { question_id: string; choice_id?: string; text_answer?: string }[];
 
     if (!enrollmentId || !moduleId || !Array.isArray(answers) || answers.length === 0) {
       return json({ error: "Faltan datos para calificar el cuestionario" }, 400);
@@ -159,7 +159,7 @@ serve(async (req) => {
     // 7. Traer preguntas y opciones REALES (con is_correct y feedback)
     const { data: questions } = await supabaseAdmin
       .from("quiz_questions")
-      .select("id, order_index, prompt")
+      .select("id, order_index, prompt, answer_type")
       .eq("quiz_id", quiz.id)
       .order("order_index");
 
@@ -168,16 +168,45 @@ serve(async (req) => {
       .select("id, question_id, choice_text, is_correct, feedback")
       .in("question_id", (questions ?? []).map((q) => q.id));
 
+    const { data: textAnswers } = await supabaseAdmin
+      .from("quiz_text_answers")
+      .select("question_id, accepted_answers, feedback")
+      .in("question_id", (questions ?? []).map((q) => q.id));
+
     if (!questions || questions.length === 0) {
       return json({ error: "Este cuestionario no tiene preguntas todavía" }, 404);
     }
 
-    // 8. Calificar
+    // 8. Calificar — dos tipos de pregunta:
+    //   "choice": igual que siempre, se compara el choice_id elegido.
+    //   "text": el estudiante escribió una palabra; se compara sin
+    //           mayúsculas ni espacios extra contra la lista de
+    //           respuestas aceptadas (por si hay variantes válidas,
+    //           ej. "colour"/"color").
     let correctCount = 0;
     const feedback = questions.map((q) => {
+      const chosen = answers.find((a) => a.question_id === q.id);
+
+      if (q.answer_type === "text") {
+        const textConfig = (textAnswers ?? []).find((t) => t.question_id === q.id);
+        const accepted = (textConfig?.accepted_answers ?? []).map((a) => a.trim().toLowerCase());
+        const given = (chosen?.text_answer ?? "").trim().toLowerCase();
+        const isCorrect = given.length > 0 && accepted.includes(given);
+        if (isCorrect) correctCount++;
+
+        return {
+          question_id: q.id,
+          prompt: q.prompt,
+          answer_type: "text",
+          given_text_answer: chosen?.text_answer ?? "",
+          correct_text_answer: textConfig?.accepted_answers?.[0] ?? null,
+          is_correct: isCorrect,
+          feedback: textConfig?.feedback ?? (isCorrect ? "¡Correcto!" : `La respuesta correcta era: "${textConfig?.accepted_answers?.[0] ?? ""}"`),
+        };
+      }
+
       const questionChoices = (choices ?? []).filter((c) => c.question_id === q.id);
       const correctChoice = questionChoices.find((c) => c.is_correct);
-      const chosen = answers.find((a) => a.question_id === q.id);
       const chosenChoice = questionChoices.find((c) => c.id === chosen?.choice_id);
       const isCorrect = !!chosenChoice?.is_correct;
       if (isCorrect) correctCount++;
@@ -185,6 +214,7 @@ serve(async (req) => {
       return {
         question_id: q.id,
         prompt: q.prompt,
+        answer_type: "choice",
         chosen_choice_id: chosenChoice?.id ?? null,
         correct_choice_id: correctChoice?.id ?? null,
         correct_choice_text: correctChoice?.choice_text ?? null,

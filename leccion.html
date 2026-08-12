@@ -285,7 +285,11 @@ function renderQuizForm(quiz, questions, choices, enrollmentId, moduleId, stage,
             <div class="q-num">Pregunta ${i + 1} de ${questions.length}</div>
             ${audioGateHtml(q, enrollmentId, playsByQuestion)}
             <div class="q-prompt">${q.prompt}</div>
-            ${choices.filter(c => c.question_id === q.id).map(c => `
+            ${q.answer_type === 'text' ? `
+              <div class="quiz-text-answer" data-question="${q.id}">
+                <input type="text" name="q-${q.id}" class="quiz-text-input" placeholder="Escribe UNA palabra" autocomplete="off" required>
+              </div>
+            ` : choices.filter(c => c.question_id === q.id).map(c => `
               <label class="quiz-choice${c.choice_text.includes('<svg') ? ' pic-choice' : ''}" data-question="${q.id}" data-choice="${c.id}">
                 <input type="radio" name="q-${q.id}" value="${c.id}" required>
                 <span>${c.choice_text}</span>
@@ -302,11 +306,15 @@ function renderQuizForm(quiz, questions, choices, enrollmentId, moduleId, stage,
   container.querySelector('#quiz-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const answers = questions.map(q => {
+      if(q.answer_type === 'text'){
+        const input = container.querySelector(`input[name="q-${q.id}"]`);
+        return { question_id: q.id, text_answer: input ? input.value.trim() : '' };
+      }
       const checked = container.querySelector(`input[name="q-${q.id}"]:checked`);
       return { question_id: q.id, choice_id: checked ? checked.value : null };
     });
 
-    if(answers.some(a => !a.choice_id)){
+    if(answers.some(a => (a.choice_id === undefined || a.choice_id === null) && !a.text_answer)){
       alert('Responde todas las preguntas antes de enviar.');
       return;
     }
@@ -337,6 +345,18 @@ function renderResult(result, container, stage){
   form.querySelector('button[type="submit"]').style.display = 'none';
 
   result.feedback.forEach(f => {
+    if(f.answer_type === 'text'){
+      const textBox = form.querySelector(`.quiz-text-answer[data-question="${f.question_id}"]`);
+      if(textBox){
+        textBox.classList.add(f.is_correct ? 'correct' : 'incorrect');
+        const fbEl = document.createElement('div');
+        fbEl.className = 'quiz-feedback';
+        fbEl.textContent = f.feedback || (f.is_correct ? '¡Correcto!' : `La respuesta correcta era: "${f.correct_text_answer}"`);
+        textBox.closest('.quiz-question')?.appendChild(fbEl);
+      }
+      return;
+    }
+
     const chosenLabel = f.chosen_choice_id ? form.querySelector(`.quiz-choice[data-choice="${f.chosen_choice_id}"]`) : null;
     const correctLabel = f.correct_choice_id ? form.querySelector(`.quiz-choice[data-choice="${f.correct_choice_id}"]`) : null;
     if(chosenLabel) chosenLabel.classList.add(f.is_correct ? 'correct' : 'incorrect');
