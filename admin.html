@@ -130,6 +130,17 @@ let ALL_COURSES = [];
 let ALL_SUPPORT = [];
 let SUPPORT_FILTER = 'open';
 
+// Escapa HTML antes de insertar cualquier texto que haya escrito un
+// estudiante (nombre de perfil, correo, asunto/mensaje de soporte) en el
+// panel — sin esto, alguien podría guardar algo como <img onerror=...> en
+// su nombre o en un mensaje de soporte y ejecutar código dentro de la
+// sesión del administrador la próxima vez que abra este panel.
+function esc(str){
+  return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
 function switchTab(name){
   document.querySelectorAll('.admin-tabs .admin-tab[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.admin-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
@@ -224,11 +235,11 @@ async function loadStudents(){
     card.innerHTML = `
       <div class="student-card-head">
         <div>
-          <h3>${profile.full_name || '(sin nombre)'} ${profile.role === 'admin' ? '<span class="badge badge-admin">Admin</span>' : ''}</h3>
-          <div class="email">${profile.email || ''} · desde ${new Date(profile.created_at).toLocaleDateString('es-CO')}</div>
+          <h3>${esc(profile.full_name) || '(sin nombre)'} ${profile.role === 'admin' ? '<span class="badge badge-admin">Admin</span>' : ''}</h3>
+          <div class="email">${esc(profile.email)} · desde ${new Date(profile.created_at).toLocaleDateString('es-CO')}</div>
         </div>
         <div class="student-actions">
-          <button class="mini-btn" onclick="resetPassword('${profile.email}', this)">Restablecer contraseña</button>
+          <button class="mini-btn" onclick="resetPassword('${esc(profile.email)}', this)">Restablecer contraseña</button>
           <button class="mini-btn" onclick="togglePreview('${profile.id}', this)">Ver vista de estudiante</button>
         </div>
       </div>
@@ -567,12 +578,12 @@ function renderSupport(){
   container.innerHTML = items.map(m => `
     <div class="support-item ${m.status === 'open' ? 'status-open' : ''}">
       <div class="support-head">
-        <div class="who">${m.student.full_name || m.student.email || 'Estudiante'} <small>${m.student.email || ''} · ${new Date(m.created_at).toLocaleString('es-CO')}</small></div>
+        <div class="who">${esc(m.student.full_name) || esc(m.student.email) || 'Estudiante'} <small>${esc(m.student.email)} · ${new Date(m.created_at).toLocaleString('es-CO')}</small></div>
         ${m.status === 'open' ? '<span class="badge badge-open">Sin responder</span>' : '<span class="badge badge-answered">Respondida</span>'}
       </div>
-      ${m.subject ? `<p style="font-weight:600;margin-bottom:6px;">${m.subject}</p>` : ''}
-      <p class="support-msg">${m.message}</p>
-      ${m.admin_reply ? `<div class="support-reply"><strong>Tu respuesta:</strong> ${m.admin_reply}</div>` : `
+      ${m.subject ? `<p style="font-weight:600;margin-bottom:6px;">${esc(m.subject)}</p>` : ''}
+      <p class="support-msg">${esc(m.message)}</p>
+      ${m.admin_reply ? `<div class="support-reply"><strong>Tu respuesta:</strong> ${esc(m.admin_reply)}</div>` : `
         <div class="reply-form">
           <textarea id="reply-${m.id}" placeholder="Escribe tu respuesta..."></textarea>
           <button class="mini-btn on" style="align-self:flex-start;" onclick="replySupport('${m.id}', this)">Responder y notificar</button>

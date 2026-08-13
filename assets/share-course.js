@@ -37,7 +37,10 @@ async function tryNativeShare(imgUrl, title, text) {
         const resp = await fetch(imgUrl);
         if (resp.ok) {
           const blob = await resp.blob();
-          const file = new File([blob], 'curso.jpg', { type: blob.type || 'image/jpeg' });
+          const safeName = (title || 'curso').toLowerCase()
+            .normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'curso';
+          const file = new File([blob], `${safeName}.jpg`, { type: blob.type || 'image/jpeg' });
           if (navigator.canShare({ files: [file] })) {
             await navigator.share({ files: [file], title, text });
             return true;

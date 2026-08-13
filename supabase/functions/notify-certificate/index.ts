@@ -89,7 +89,9 @@ serve(async (req) => {
     return new Response("Método no permitido", { status: 405 });
   }
 
-  if (WEBHOOK_SECRET && req.headers.get("x-webhook-secret") !== WEBHOOK_SECRET) {
+  // Si el secret no está configurado todavía, no dejamos pasar nada (antes,
+  // sin el secret puesto, este endpoint quedaba abierto para cualquiera).
+  if (!WEBHOOK_SECRET || req.headers.get("x-webhook-secret") !== WEBHOOK_SECRET) {
     return new Response("No autorizado", { status: 401 });
   }
 

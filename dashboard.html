@@ -95,6 +95,11 @@
 <script src="assets/auth.js"></script>
 <script src="assets/script.js"></script>
 <script>
+function esc(str){
+  return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
 (async () => {
   if(!supabaseReady()){
     document.getElementById('dash-sub').textContent = 'El Campus todavía no está conectado a la base de datos. Vuelve pronto.';
@@ -232,8 +237,8 @@ async function loadMyTickets(userId){
   }
   container.innerHTML = tickets.map(t => `
     <div class="my-ticket">
-      <div class="q">${t.subject ? `<strong>${t.subject}:</strong> ` : ''}${t.message}</div>
-      ${t.admin_reply ? `<div class="a">${t.admin_reply}</div>` : '<div class="a" style="opacity:.6;">Aún sin responder.</div>'}
+      <div class="q">${t.subject ? `<strong>${esc(t.subject)}:</strong> ` : ''}${esc(t.message)}</div>
+      ${t.admin_reply ? `<div class="a">${esc(t.admin_reply)}</div>` : '<div class="a" style="opacity:.6;">Aún sin responder.</div>'}
     </div>
   `).join('');
 }
