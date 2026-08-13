@@ -67,7 +67,8 @@ nav{display:flex;justify-content:space-between;align-items:center;}
 
 /* retrato circular — para fotos ya recortadas en círculo */
 .photo-round{aspect-ratio:1/1;border-radius:50%;overflow:hidden;border:1px solid var(--line);background:var(--bg-alt);}
-.photo-round img{width:100%;height:100%;object-fit:cover;display:block;}
+.photo-round img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;}
+.hero-photo.photo-round{padding:0;}
 .hero .kicker{font-size:13px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-bottom:26px;}
 .hero h1{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(42px,7.5vw,100px);line-height:.98;letter-spacing:-2px;}
 .hero h1 .line2{display:block;font-style:italic;font-weight:500;color:var(--muted);font-size:.55em;margin-top:10px;}
