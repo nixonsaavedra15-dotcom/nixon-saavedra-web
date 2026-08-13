@@ -48,6 +48,7 @@ seguir con el siguiente.
 | 10 | `supabase/b1-batch9-unit9.sql` | Unidad 9 — Relationships & Feelings |
 | 11 | `supabase/b1-batch10-unit10.sql` | Unidad 10 — Culture & Celebrations |
 | 12 | `supabase/b1-batch11-unit11.sql` | Unidad 11 — Final Review & Certification (quiz final que desbloquea el certificado) |
+| 13 | `supabase/b1-listening-audio-urls.sql` | Conecta los 11 audios de Listening ya grabados (ver sección 2 más abajo — sube los archivos a Storage antes de correr este) |
 
 Los 12 son seguros de correr más de una vez (los `UPDATE` se
 sobrescriben y los `INSERT` usan `on conflict do nothing`), así que si
@@ -59,15 +60,22 @@ exactamente la misma infraestructura (`submit-quiz`,
 `submit-closing-form`, `update-lesson-step`, `submit-speaking-attempt`)
 que ya está desplegada y funcionando para Cambridge A2 Key.
 
-## 2. Listening — pendiente de grabar
+## 2. Listening — conectar los 11 audios
 
-El archivo `supabase/GUIONES-AUDIO-LISTENING-INGLES-B1.md` tiene un
-guion de audio por unidad (11 en total), listos para grabar en
-ElevenLabs, igual que hiciste con Cambridge A2 Key. Cuando tengas los
-11 audios grabados y subidos, avísame y genero un batch de SQL corto
-que agrega cada `audio_url` al `lesson_json` correspondiente — el
-reproductor con límite de reproducciones ya existe en el sitio, no hay
-que tocar código.
+Ya grabaste los 11 audios (carpeta "Audios B1") y ya los renombré ahí
+mismo con el nombre exacto que necesita el siguiente paso
+(`b1-unit01-daily-life-routines.mp3` ... `b1-unit11-final-review-certification.mp3`).
+
+1. Supabase → **Storage** → bucket `listening-audio` (el mismo que ya
+   usa Cambridge A2 Key, no hace falta crear uno nuevo) → sube los 11
+   archivos con el prefijo `b1-unit...` tal cual están nombrados.
+2. Corre `supabase/b1-listening-audio-urls.sql` completo en el SQL
+   Editor. Al final te muestra una consulta de verificación — debe
+   devolver 11 filas, cada una con su `audio_url` ya asignado.
+
+El audio queda dentro de la primera lectura de cada unidad, con el
+mismo reproductor (guion visible + límite de reproducciones) que ya
+usa Cambridge A2 Key — no hay que tocar código.
 
 ## 3. Agrega el curso a `campus.html` y `tienda.html`
 
