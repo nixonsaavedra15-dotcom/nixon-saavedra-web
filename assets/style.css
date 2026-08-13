@@ -406,6 +406,44 @@ footer{padding:70px 0 50px;border-top:1px solid var(--line);}
 .mini-check[open] summary::after{content:"–";}
 .mini-check .answer{padding:0 18px 16px;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line);padding-top:12px;line-height:1.6;}
 
+/* ============================================================
+   Inglés B1 — mapas mentales, conectores, verbos, phrasal verbs,
+   y el juego de "match" (segundo tipo de interactivo, junto al
+   carrusel de tarjetas que ya existe) — pensado para que cada
+   unidad no se sienta igual a la anterior.
+   ============================================================ */
+.mindmap-wrap{margin:20px 0 30px;}
+.mindmap-hub{max-width:320px;margin:0 auto 18px;text-align:center;border-radius:16px;padding:18px 22px;background:var(--ink);color:var(--bg);font-family:'Fraunces',serif;font-weight:600;font-size:17px;}
+.mindmap-branches{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;}
+.mindmap-node{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:12px;padding:14px 16px;background:var(--bg-alt);}
+.mindmap-node .node-title{font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:6px;}
+.mindmap-node .node-items{color:var(--muted);font-size:12.5px;line-height:1.7;}
+
+.connector-flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 28px;}
+.connector-flow .conn-chip{border:1px solid var(--line);border-radius:20px;padding:8px 16px;font-size:13px;background:var(--bg-alt);color:var(--ink);}
+.connector-flow .conn-arrow{color:var(--accent);font-size:16px;}
+
+.verb-table th.vt-base{color:var(--steel);}
+.verb-table th.vt-past{color:var(--wine);}
+.verb-table th.vt-part{color:var(--gold);}
+
+.phrasal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin:16px 0 30px;}
+.phrasal-item{border:1px solid var(--line);border-radius:14px;padding:16px 18px;background:linear-gradient(160deg,color-mix(in srgb, var(--interactive-blue) 8%, var(--bg-alt)),var(--bg-alt));}
+.phrasal-item .pv{font-family:'Fraunces',serif;font-weight:600;font-size:15.5px;color:var(--interactive-blue);}
+.phrasal-item .pv-mean{color:var(--ink);font-size:12.5px;margin-top:4px;}
+.phrasal-item .pv-ex{color:var(--muted);font-size:12px;margin-top:6px;font-style:italic;}
+
+.match-game .match-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.match-game .match-col-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.match-card{border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:10px;background:var(--bg-alt);cursor:pointer;font-size:14px;transition:.15s;}
+.match-card:hover{border-color:var(--accent);}
+.match-card.selected{border-color:var(--interactive-blue);background:color-mix(in srgb, var(--interactive-blue) 12%, var(--bg-alt));}
+.match-card.correct{border-color:var(--steel);background:color-mix(in srgb, var(--steel) 14%, var(--bg-alt));color:var(--steel);cursor:default;}
+.match-card.wrong{border-color:var(--wine);animation:shakeMatch .3s;}
+.match-status{text-align:center;color:var(--muted);font-size:13px;margin:16px 0 6px;}
+@keyframes shakeMatch{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+@media(max-width:640px){.match-game .match-cols{grid-template-columns:1fr;}}
+
 .locked-box{border:1px dashed var(--wine);border-radius:20px;padding:60px 30px;text-align:center;color:var(--muted);}
 
 .quiz-card{border:1px solid var(--line);border-radius:20px;padding:40px;background:linear-gradient(160deg,rgba(33,29,24,.035),transparent);}

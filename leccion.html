@@ -521,6 +521,82 @@ function renderReading(c, r, nextStep){
 
 function renderInteractive(c, I){
   I = I || { slides: [] };
+  if(I.type === 'match') return renderMatchGame(c, I);
+  return renderFlipSlides(c, I);
+}
+
+// Segundo tipo de interactivo: emparejar tarjetas (palabra ↔ significado,
+// verbo ↔ pasado, phrasal verb ↔ definición...) — para que no todas las
+// unidades del curso se sientan iguales al llegar aquí.
+function renderMatchGame(c, I){
+  const pairs = (I.pairs || []).map((p, i) => ({ ...p, id: 'p' + i }));
+  const left = shuffleArr(pairs.map(p => ({ id: p.id, text: p.left })));
+  const right = shuffleArr(pairs.map(p => ({ id: p.id, text: p.right })));
+  let selectedLeft = null;
+  let matched = new Set();
+
+  function shuffleArr(arr){
+    const a = arr.slice();
+    for(let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function paint(){
+    c.innerHTML = `
+      <div class="stage-card interactive-stage reveal in">
+        <div class="stage-tag" style="color:var(--interactive-blue);">Lección interactiva</div>
+        <h2 class="serif" style="font-size:clamp(22px,2.6vw,28px);margin:8px 0 6px;">${I.title || 'Match the pairs'}</h2>
+        <p style="color:var(--muted);font-size:14px;margin-bottom:10px;">${I.intro || 'Tap one card on each side to match them.'}</p>
+        <div class="slide-deck match-game">
+          <div class="match-cols">
+            <div>
+              <div class="match-col-label">A</div>
+              ${left.map(item => `<div class="match-card ${matched.has(item.id) ? 'correct' : (selectedLeft === item.id ? 'selected' : '')}" data-side="left" data-id="${item.id}" onclick="window.__matchPick('left','${item.id}')">${item.text}</div>`).join('')}
+            </div>
+            <div>
+              <div class="match-col-label">B</div>
+              ${right.map(item => `<div class="match-card ${matched.has(item.id) ? 'correct' : ''}" data-side="right" data-id="${item.id}" onclick="window.__matchPick('right','${item.id}')">${item.text}</div>`).join('')}
+            </div>
+          </div>
+          <div class="match-status">${matched.size} / ${pairs.length} matched</div>
+          <div class="slide-nav">
+            <button class="btn btn-accent" style="cursor:pointer;border:none;" ${matched.size < pairs.length ? 'disabled' : ''} onclick="advanceStep('quiz_interactive')">Go to the quiz →</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  window.__matchPick = (side, id) => {
+    if(matched.has(id) && side === 'right') return;
+    if(side === 'left'){
+      if(matched.has(id)) return;
+      selectedLeft = id;
+      paint();
+      return;
+    }
+    // side === 'right'
+    if(!selectedLeft) return;
+    if(selectedLeft === id){
+      matched.add(id);
+      selectedLeft = null;
+      paint();
+    } else {
+      const card = c.querySelector(`.match-card[data-side="right"][data-id="${id}"]`);
+      if(card){
+        card.classList.add('wrong');
+        setTimeout(() => { selectedLeft = null; paint(); }, 350);
+      }
+    }
+  };
+
+  paint();
+}
+
+function renderFlipSlides(c, I){
   let idx = 0;
   const slides = I.slides || [];
 
