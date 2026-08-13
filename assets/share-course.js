@@ -20,7 +20,23 @@
 // Web no acepta adjuntar una imagen por enlace), y el botón
 // "Compartir en redes" copia el texto al portapapeles y descarga la
 // imagen para que la pegues/adjuntes tú mismo donde quieras.
+//
+// Por qué en computador NO aparecen Facebook/Instagram en el panel de
+// compartir: ese panel lo arma el propio macOS/Windows, no el sitio —
+// solo lista apps instaladas en el computador que se hayan registrado
+// como "extensión para compartir" (AirDrop, Mensajes, Notas...). Meta
+// no tiene una app de Mac/Windows para Facebook o Instagram, así que
+// nunca van a poder aparecer ahí, sin importar qué haga el código.
+// En el celular sí aparecen (si el estudiante tiene la app instalada),
+// porque iOS/Android sí las registra como destino para compartir. Por
+// eso en computador usamos directamente el "copiar + descargar":
+// entrega la misma info (imagen + texto) para pegarla donde quiera,
+// en vez de mostrar el panel nativo confuso y sin redes sociales.
 // ============================================================
+
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
 
 function buildShareText(row) {
   const title = row.dataset.title || '';
@@ -81,8 +97,12 @@ async function shareCourseWhatsapp(btn) {
   const text = buildShareText(row);
   const imgUrl = row.dataset.img;
 
-  const shared = await tryNativeShare(imgUrl, row.dataset.title, text);
-  if (shared) return;
+  // El panel nativo con archivo solo vale la pena en celular (ver nota
+  // arriba) — en computador vamos directo a wa.me con el texto listo.
+  if (isMobileDevice()) {
+    const shared = await tryNativeShare(imgUrl, row.dataset.title, text);
+    if (shared) return;
+  }
 
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
 }
@@ -92,8 +112,13 @@ async function shareCourseGeneric(btn) {
   const text = buildShareText(row);
   const imgUrl = row.dataset.img;
 
-  const shared = await tryNativeShare(imgUrl, row.dataset.title, text);
-  if (shared) return;
+  // Igual aquí: en computador el panel nativo no tiene redes sociales
+  // (es una limitación del sistema operativo, no del sitio — ver nota
+  // arriba), así que copiar + descargar es lo que de verdad sirve.
+  if (isMobileDevice()) {
+    const shared = await tryNativeShare(imgUrl, row.dataset.title, text);
+    if (shared) return;
+  }
 
   await fallbackCopyAndDownload(imgUrl, text);
 }
