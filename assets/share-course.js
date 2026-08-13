@@ -18,8 +18,8 @@
 // computador, o si el navegador no la soporta, el botón de WhatsApp
 // abre wa.me con el texto ya escrito (sin imagen, porque WhatsApp
 // Web no acepta adjuntar una imagen por enlace), y el botón
-// "Compartir en redes" copia el texto al portapapeles y descarga la
-// imagen para que la pegues/adjuntes tú mismo donde quieras.
+// "Compartir en redes" copia el texto Y la imagen al portapapeles
+// (sin descargar nada) para que los pegues donde quieras.
 //
 // Por qué en computador NO aparecen Facebook/Instagram en el panel de
 // compartir: ese panel lo arma el propio macOS/Windows, no el sitio —
@@ -29,9 +29,9 @@
 // nunca van a poder aparecer ahí, sin importar qué haga el código.
 // En el celular sí aparecen (si el estudiante tiene la app instalada),
 // porque iOS/Android sí las registra como destino para compartir. Por
-// eso en computador usamos directamente el "copiar + descargar":
-// entrega la misma info (imagen + texto) para pegarla donde quiera,
-// en vez de mostrar el panel nativo confuso y sin redes sociales.
+// eso en computador usamos directamente "copiar al portapapeles":
+// deja el texto Y la imagen del curso copiados (sin descargar nada),
+// listos para pegar con Cmd+V donde quiera compartirlos.
 // ============================================================
 
 function isMobileDevice() {
@@ -75,21 +75,56 @@ async function tryNativeShare(imgUrl, title, text) {
   }
 }
 
-async function fallbackCopyAndDownload(imgUrl, text) {
+// Convierte cualquier imagen a PNG en memoria — el portapapeles del
+// navegador solo acepta copiar imágenes de forma confiable como PNG.
+async function toPngBlob(blob) {
+  const bitmap = await createImageBitmap(blob);
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  canvas.getContext('2d').drawImage(bitmap, 0, 0);
+  return await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+}
+
+// Copia el texto Y la imagen del curso al portapapeles en un solo paso
+// (sin descargar ningún archivo) — así quien comparte solo tiene que
+// pegar (Cmd+V / Ctrl+V) donde quiera: Instagram, Facebook, un correo, etc.
+async function fallbackCopyToClipboard(imgUrl, text) {
+  const items = { 'text/plain': new Blob([text], { type: 'text/plain' }) };
+  let imageIncluded = false;
+
+  if (imgUrl && window.ClipboardItem) {
+    try {
+      const resp = await fetch(imgUrl);
+      if (resp.ok) {
+        const rawBlob = await resp.blob();
+        items['image/png'] = rawBlob.type === 'image/png' ? rawBlob : await toPngBlob(rawBlob);
+        imageIncluded = true;
+      }
+    } catch (e) {
+      // Si la imagen no se puede leer/convertir, seguimos solo con el texto.
+    }
+  }
+
+  try {
+    await navigator.clipboard.write([new ClipboardItem(items)]);
+    alert(
+      imageIncluded
+        ? 'Copiamos el texto y la imagen del curso a tu portapapeles — pégalos (Cmd+V) donde quieras compartir.'
+        : 'Copiamos la descripción del curso a tu portapapeles.'
+    );
+    return;
+  } catch (e) {
+    // Algunos navegadores no dejan copiar imagen+texto juntos — al menos
+    // dejamos el texto copiado en vez de fallar del todo.
+  }
+
   try {
     await navigator.clipboard.writeText(text);
+    alert('Copiamos la descripción del curso a tu portapapeles.');
   } catch (e) {
-    /* portapapeles no disponible, seguimos igual */
+    alert('No pudimos copiar automáticamente — selecciona el texto y la imagen de la página para compartirlos tú mismo.');
   }
-  if (imgUrl) {
-    const a = document.createElement('a');
-    a.href = imgUrl;
-    a.download = '';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
-  alert('Copiamos la descripción del curso a tu portapapeles y descargamos la imagen — pégalas donde quieras compartir.');
 }
 
 async function shareCourseWhatsapp(btn) {
@@ -114,13 +149,14 @@ async function shareCourseGeneric(btn) {
 
   // Igual aquí: en computador el panel nativo no tiene redes sociales
   // (es una limitación del sistema operativo, no del sitio — ver nota
-  // arriba), así que copiar + descargar es lo que de verdad sirve.
+  // arriba), así que copiar texto+imagen al portapapeles es lo que de
+  // verdad sirve.
   if (isMobileDevice()) {
     const shared = await tryNativeShare(imgUrl, row.dataset.title, text);
     if (shared) return;
   }
 
-  await fallbackCopyAndDownload(imgUrl, text);
+  await fallbackCopyToClipboard(imgUrl, text);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
