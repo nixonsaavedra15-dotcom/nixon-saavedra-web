@@ -5,3 +5,6 @@
 .env.*
 # Los audios ya viven en Supabase Storage — no hace falta duplicarlos en git
 Audios English A2/
+# Imágenes originales sin optimizar — las versiones que se usan en el sitio
+# ya están copiadas dentro de assets/img/
+Imágenes página/

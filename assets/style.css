@@ -149,7 +149,7 @@ section.tight{padding:70px 0;}
 .tl-item span{color:var(--muted);font-size:13px;}
 
 /* book gallery (obra) */
-.book-row{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;}
+.book-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:22px;}
 .book-tile{aspect-ratio:3/4;border-radius:14px;background:linear-gradient(150deg,#3c342a,#221c15);border:1px solid var(--line);display:flex;align-items:flex-end;padding:20px;font-family:'Fraunces',serif;font-style:italic;font-size:16px;color:rgba(247,244,236,.85);transition:transform .3s;}
 .book-tile:hover{transform:translateY(-8px) rotate(-1deg);}
 .book-detail{display:grid;grid-template-columns:.8fr 1.2fr;gap:44px;align-items:start;padding:44px 0;border-top:1px solid var(--line);}
