@@ -128,7 +128,8 @@ section.tight{padding:70px 0;}
 .campus-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;}
 .course-card{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:linear-gradient(160deg,rgba(33,29,24,.035),transparent);transform-style:preserve-3d;transition:transform .15s ease,border-color .3s;}
 .course-card:hover{border-color:var(--accent);}
-.course-card .thumb{aspect-ratio:16/10;background:linear-gradient(150deg,#3c342a,#221c15);}
+.course-card .thumb{aspect-ratio:4/5;background:linear-gradient(150deg,#3c342a,#221c15);}
+.course-card .thumb img{width:100%;height:100%;object-fit:cover;}
 .course-card .body{padding:26px;}
 .course-card .cat{display:inline-block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:5px 12px;border-radius:20px;margin-bottom:16px;}
 .cat-en{background:color-mix(in srgb, var(--gold) 18%, transparent);color:var(--gold);}
