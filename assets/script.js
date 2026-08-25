@@ -1,5 +1,35 @@
 // ===== Nixon Saavedra — comportamiento compartido =====
 
+// menú móvil (hamburguesa)
+const navToggle = document.querySelector('.nav-toggle');
+const navLinks = document.querySelector('.navlinks');
+if(navToggle && navLinks){
+  navToggle.addEventListener('click', ()=>{
+    const isOpen = navLinks.classList.toggle('open');
+    navToggle.classList.toggle('active', isOpen);
+    navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    document.body.classList.toggle('nav-open', isOpen);
+  });
+  // cerrar el menú al tocar un link
+  navLinks.querySelectorAll('a').forEach(link=>{
+    link.addEventListener('click', ()=>{
+      navLinks.classList.remove('open');
+      navToggle.classList.remove('active');
+      navToggle.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('nav-open');
+    });
+  });
+  // si la ventana crece más allá del punto móvil, cerrar el menú
+  window.addEventListener('resize', ()=>{
+    if(window.innerWidth > 900){
+      navLinks.classList.remove('open');
+      navToggle.classList.remove('active');
+      navToggle.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('nav-open');
+    }
+  });
+}
+
 // cursor personalizado
 const dot = document.getElementById('cdot'), ring = document.getElementById('cring');
 if(dot && ring){
