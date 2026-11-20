@@ -624,3 +624,132 @@ footer{padding:70px 0 50px;border-top:1px solid var(--line);}
 .story-panels{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0;}
 .story-panels svg{width:100%;height:auto;border-radius:12px;background:var(--bg-alt);border:1px solid var(--line);}
 @media(max-width:640px){.story-panels{grid-template-columns:1fr;}}
+
+/* ============================================================
+   KIT VISUAL DE LECCIONES — colorido, vivo, con jerarquía clara.
+   Componentes reutilizables por cualquier curso (hero, tarjetas de
+   color, tips por tipo, pasos, chat, infografías, mapa del curso).
+   Paleta de apoyo: sky, mint, berry, sunny (además de steel/wine/gold).
+   ============================================================ */
+:root{
+  --sunny:#f2b23a;
+  --mint:#2fa383;
+  --berry:#9a5bb8;
+  --sky:#3f7fab;
+}
+
+/* Barra de color por etapa — da identidad a cada pantalla de la lección */
+.stage-card{position:relative;overflow:hidden;}
+.stage-card::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,var(--steel),var(--sky));}
+.welcome-stage::before{background:linear-gradient(90deg,var(--gold),var(--wine),var(--berry));}
+.reading-stage::before{background:linear-gradient(90deg,var(--steel),var(--mint));}
+.interactive-stage::before{background:linear-gradient(90deg,var(--sky),var(--berry));}
+.practice-stage::before{background:linear-gradient(90deg,var(--practice-coral),var(--sunny));}
+.closing-stage::before{background:linear-gradient(90deg,var(--sunny),var(--mint),var(--sky));}
+
+.lesson-content-body h2::after{content:"";display:block;width:46px;height:4px;border-radius:3px;margin-top:8px;background:linear-gradient(90deg,var(--wine),var(--gold));}
+.lesson-content-body h3{font-family:'Fraunces',serif;font-size:18px;margin:26px 0 10px;color:var(--steel);}
+.tip-box{border-left:4px solid var(--steel);background:linear-gradient(100deg,color-mix(in srgb, var(--steel) 13%, transparent),color-mix(in srgb, var(--mint) 5%, transparent));}
+.quiz-result-banner.pass .score::before{content:"🎉 ";}
+.quiz-result-banner.pass{background:linear-gradient(135deg,color-mix(in srgb, var(--mint) 20%, transparent),color-mix(in srgb, var(--sunny) 16%, transparent));}
+
+/* Hero de unidad */
+.hero-banner{position:relative;overflow:hidden;display:flex;gap:22px;align-items:center;border-radius:20px;padding:26px 30px;margin:0 0 28px;color:#fff;background:linear-gradient(135deg,var(--steel),var(--sky));}
+.hero-banner::after{content:"";position:absolute;right:-50px;top:-50px;width:190px;height:190px;border-radius:50%;background:rgba(255,255,255,.12);}
+.hero-banner::before{content:"";position:absolute;right:70px;bottom:-60px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.09);}
+.hero-banner.warm{background:linear-gradient(135deg,var(--wine),var(--gold));}
+.hero-banner.coral{background:linear-gradient(135deg,var(--practice-coral),var(--berry));}
+.hero-banner.night{background:linear-gradient(135deg,#20211d,var(--steel));}
+.hero-banner.sun{background:linear-gradient(135deg,var(--gold),var(--sunny));color:#20211d;}
+.hero-banner .hb-emoji{font-size:56px;flex-shrink:0;line-height:1;position:relative;z-index:1;}
+.hero-banner .hb-body{position:relative;z-index:1;}
+.hero-banner h3{font-family:'Fraunces',serif;font-size:24px;margin:0 0 6px;color:inherit;}
+.hero-banner p{font-size:14.5px;line-height:1.65;margin:0;opacity:.96;}
+
+/* Tarjetas de color */
+.kit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px;margin:18px 0 30px;}
+.kit-card{border-radius:16px;padding:18px 20px;border:1px solid transparent;transition:transform .18s ease,box-shadow .18s ease;}
+.kit-card:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(32,33,29,.1);}
+.kit-card .k-ico{font-size:30px;line-height:1;margin-bottom:10px;}
+.kit-card .k-title{font-weight:700;font-size:14.5px;margin-bottom:6px;color:var(--ink);}
+.kit-card .k-text{font-size:13px;line-height:1.6;color:var(--muted);}
+.k-teal{background:color-mix(in srgb, var(--steel) 12%, #fff);border-color:color-mix(in srgb, var(--steel) 30%, transparent);}
+.k-coral{background:color-mix(in srgb, var(--practice-coral) 13%, #fff);border-color:color-mix(in srgb, var(--practice-coral) 32%, transparent);}
+.k-gold{background:color-mix(in srgb, var(--sunny) 20%, #fff);border-color:color-mix(in srgb, var(--gold) 38%, transparent);}
+.k-blue{background:color-mix(in srgb, var(--sky) 13%, #fff);border-color:color-mix(in srgb, var(--sky) 32%, transparent);}
+.k-berry{background:color-mix(in srgb, var(--berry) 12%, #fff);border-color:color-mix(in srgb, var(--berry) 30%, transparent);}
+.k-mint{background:color-mix(in srgb, var(--mint) 14%, #fff);border-color:color-mix(in srgb, var(--mint) 32%, transparent);}
+
+/* Tips por tipo (memoria / día a día / estudio / trampa / examen) */
+.tip-card{display:flex;gap:16px;align-items:flex-start;border-radius:16px;padding:16px 20px;margin:20px 0;border-left:5px solid var(--steel);font-size:13.8px;line-height:1.7;color:var(--ink);}
+.tip-card .tc-ico{font-size:28px;flex-shrink:0;line-height:1.1;}
+.tip-card .tc-label{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px;}
+.tip-memory{background:color-mix(in srgb, var(--berry) 11%, #fff);border-left-color:var(--berry);}
+.tip-memory .tc-label{color:var(--berry);}
+.tip-daily{background:color-mix(in srgb, var(--mint) 13%, #fff);border-left-color:var(--mint);}
+.tip-daily .tc-label{color:var(--mint);}
+.tip-study{background:color-mix(in srgb, var(--sky) 12%, #fff);border-left-color:var(--sky);}
+.tip-study .tc-label{color:var(--sky);}
+.tip-trap{background:color-mix(in srgb, var(--wine) 11%, #fff);border-left-color:var(--wine);}
+.tip-trap .tc-label{color:var(--wine);}
+.tip-exam{background:color-mix(in srgb, var(--sunny) 20%, #fff);border-left-color:var(--gold);}
+.tip-exam .tc-label{color:var(--gold);}
+
+/* Pasos numerados (flujos de estrategia) */
+.steps-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px 12px;counter-reset:stp;margin:26px 0 30px;}
+.step-item{position:relative;border-radius:16px;padding:22px 16px 16px;background:#fff;border:1px solid var(--line);box-shadow:0 8px 20px rgba(32,33,29,.05);}
+.step-item::before{counter-increment:stp;content:counter(stp);position:absolute;top:-13px;left:14px;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--wine),var(--gold));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;box-shadow:0 6px 12px rgba(193,101,47,.35);}
+.step-item b{display:block;margin-bottom:5px;font-size:14px;}
+.step-item span{font-size:12.8px;color:var(--muted);line-height:1.6;}
+
+/* Sí / No */
+.vs-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0 28px;}
+.vs-do,.vs-dont{border-radius:16px;padding:16px 20px;font-size:13.5px;line-height:1.7;}
+.vs-do{background:color-mix(in srgb, var(--mint) 13%, #fff);border:1px solid color-mix(in srgb, var(--mint) 38%, transparent);}
+.vs-dont{background:color-mix(in srgb, var(--wine) 10%, #fff);border:1px solid color-mix(in srgb, var(--wine) 36%, transparent);}
+.vs-do .vs-h,.vs-dont .vs-h{font-weight:700;font-size:13px;margin-bottom:6px;}
+.vs-do .vs-h{color:var(--mint);}
+.vs-dont .vs-h{color:var(--wine);}
+.vs-grid ul{margin:0 0 0 18px;}
+@media(max-width:640px){.vs-grid{grid-template-columns:1fr;}}
+
+/* Conversaciones tipo chat */
+.chat{display:flex;flex-direction:column;gap:10px;margin:18px 0 26px;max-width:640px;}
+.msg{max-width:86%;padding:11px 16px;border-radius:18px;font-size:14.5px;line-height:1.55;box-shadow:0 4px 12px rgba(32,33,29,.06);}
+.msg .who{display:block;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.65;margin-bottom:2px;}
+.msg.a{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px;}
+.msg.b{align-self:flex-end;background:linear-gradient(135deg,var(--steel),var(--sky));color:#fff;border-bottom-right-radius:4px;}
+.msg mark{background:rgba(242,178,58,.45);color:inherit;padding:0 4px;border-radius:5px;}
+
+/* Infografías (SVG inline) */
+.infographic{border:1px solid var(--line);border-radius:18px;padding:18px 16px 14px;margin:24px 0 30px;background:linear-gradient(160deg,#fff,var(--bg-alt));}
+.infographic svg{width:100%;height:auto;display:block;}
+.infographic .ig-cap{font-size:12px;color:var(--muted);text-align:center;margin-top:10px;font-style:italic;}
+
+/* Cajas de misión / cita motivadora / mapa del curso */
+.mission-box{border-radius:18px;padding:20px 24px;margin:22px 0;background:linear-gradient(135deg,color-mix(in srgb, var(--sunny) 28%, #fff),color-mix(in srgb, var(--wine) 12%, #fff));border:1px solid color-mix(in srgb, var(--gold) 40%, transparent);}
+.mission-box .mb-title{font-family:'Fraunces',serif;font-weight:700;font-size:17px;margin-bottom:8px;}
+.mission-box ul{margin:0 0 0 20px;font-size:14px;line-height:1.75;}
+.quote-motiv{font-family:'Fraunces',serif;font-style:italic;font-size:18px;line-height:1.6;padding:18px 24px;margin:26px 0;border-radius:16px;background:linear-gradient(120deg,color-mix(in srgb, var(--berry) 10%, #fff),color-mix(in srgb, var(--sky) 10%, #fff));border-left:5px solid var(--berry);color:var(--ink);}
+.quote-motiv small{display:block;font-family:'Space Grotesk',sans-serif;font-style:normal;font-size:12px;color:var(--muted);margin-top:8px;}
+.roadmap{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:18px 0 6px;}
+.rm-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid var(--line);color:var(--muted);background:#fff;}
+.rm-dot.done{background:var(--mint);border-color:var(--mint);color:#fff;}
+.rm-dot.here{background:linear-gradient(135deg,var(--wine),var(--gold));border-color:transparent;color:#fff;transform:scale(1.25);box-shadow:0 8px 16px rgba(193,101,47,.4);}
+.rm-line{width:14px;height:2px;background:var(--line);}
+.rm-label{font-size:12.5px;color:var(--muted);margin-bottom:4px;}
+.pill-row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 22px;}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:30px;font-size:12.5px;font-weight:600;background:color-mix(in srgb, var(--steel) 12%, #fff);color:var(--steel);border:1px solid color-mix(in srgb, var(--steel) 28%, transparent);}
+.pill.p-wine{background:color-mix(in srgb, var(--wine) 12%, #fff);color:var(--wine);border-color:color-mix(in srgb, var(--wine) 30%, transparent);}
+.pill.p-gold{background:color-mix(in srgb, var(--sunny) 25%, #fff);color:#8a6a14;border-color:color-mix(in srgb, var(--gold) 40%, transparent);}
+.pill.p-blue{background:color-mix(in srgb, var(--sky) 13%, #fff);color:var(--sky);border-color:color-mix(in srgb, var(--sky) 30%, transparent);}
+
+/* Vocabulario con emoji y ejemplo */
+.vocab-item{transition:transform .18s ease,box-shadow .18s ease;}
+.vocab-item:hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(32,33,29,.09);}
+.vocab-item .emo{font-size:26px;display:block;margin-bottom:6px;}
+.vocab-item .ex{font-size:12px;font-style:italic;color:var(--ink);margin-top:7px;padding-top:7px;border-top:1px dashed var(--line);line-height:1.5;}
+
+/* Tabla con color de encabezado */
+.grammar-table.colorful th{background:linear-gradient(90deg,color-mix(in srgb, var(--steel) 20%, #fff),color-mix(in srgb, var(--sky) 16%, #fff));}
+.grammar-table.colorful td:first-child{color:var(--ink);font-weight:600;}
