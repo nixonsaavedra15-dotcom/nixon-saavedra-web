@@ -197,7 +197,12 @@ function esc(str){
               </a>`;
           }).join('') : '<div class="activity-item">Aún no hay módulos publicados para este curso.</div>'}
         </div>
-        ${cert ? `<p class="cert-btn" style="color:var(--accent);font-size:13px;">Certificado emitido el ${new Date(cert.issued_at).toLocaleDateString('es-CO')}.</p>` : ''}
+        ${cert ? `
+          <div class="cert-btn" style="margin-top:18px;padding:18px 20px;border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb, var(--sunny) 26%, #fff),color-mix(in srgb, var(--mint) 14%, #fff));border:1px solid color-mix(in srgb, var(--gold) 40%, transparent);display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+            <div><strong style="font-family:'Fraunces',serif;font-size:17px;">🎓 ¡Tu certificado está listo!</strong>
+            <div style="color:var(--muted);font-size:13px;margin-top:4px;">Emitido el ${new Date(cert.issued_at).toLocaleDateString('es-CO')}. Míralo y descárgalo en PDF.</div></div>
+            <a href="certificado.html?enrollment=${en.id}" class="btn btn-accent">Ver mi certificado</a>
+          </div>` : ''}
       `;
       container.appendChild(panel);
     }

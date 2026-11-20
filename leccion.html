@@ -91,6 +91,16 @@ function temaDelModulo(mod){
 let CURRENT_ENROLLMENT_ID = null;
 let CURRENT_MODULE_ID = null;
 
+// Personalización: cualquier texto de lección puede usar {{nombre}} y se
+// reemplaza por el primer nombre del estudiante (escapado para HTML).
+let STUDENT_NAME = '';
+function escName(s){ return String(s).replace(/[&<>"'\\]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','\\':''}[c])); }
+function personalize(value){
+  const name = escName(STUDENT_NAME || 'estudiante');
+  if(typeof value === 'string') return value.split('{{nombre}}').join(name);
+  return JSON.parse(JSON.stringify(value).split('{{nombre}}').join(name));
+}
+
 (async () => {
   if(!supabaseReady()){
     document.getElementById('lesson-root').innerHTML = '<div class="empty-state">El Campus todavía no está conectado a la base de datos.</div>';
@@ -134,6 +144,12 @@ let CURRENT_MODULE_ID = null;
     return;
   }
 
+  try{
+    const { data: prof } = await supabaseClient.from('profiles').select('full_name').eq('id', session.user.id).maybeSingle();
+    const raw = (prof?.full_name || session.user.email || '').trim().split(/[\s@]/)[0];
+    STUDENT_NAME = raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : '';
+  }catch(_e){ STUDENT_NAME = ''; }
+
   if(mod.lesson_json){
     initFlow(mod, progressRow);
   } else {
@@ -160,7 +176,7 @@ function renderLocked(mod){
 function renderLesson(mod, progressRow){
   document.getElementById('lesson-title').textContent = mod.title;
   document.getElementById('lesson-illustration').innerHTML = obtenerIlustracion(temaDelModulo(mod));
-  document.getElementById('lesson-body').innerHTML = mod.description || '<p>Sin contenido todavía.</p>';
+  document.getElementById('lesson-body').innerHTML = personalize(mod.description || '<p>Sin contenido todavía.</p>');
 
   if(progressRow.completed){
     document.getElementById('lesson-status').innerHTML =
@@ -404,10 +420,14 @@ function renderResult(result, container, stage){
       <div class="score">${result.score}/100</div>
       <p style="margin-top:10px;">
         ${result.passed
-          ? (result.next_module_unlocked ? '¡Aprobaste! Ya desbloqueaste el siguiente módulo.' : '¡Felicitaciones, completaste el curso! Revisa tu certificado en el Campus.')
+          ? (result.next_module_unlocked ? '¡Aprobaste! Ya desbloqueaste el siguiente módulo.' : '🎓 ¡Felicitaciones, completaste el curso! Tu certificado ya está listo.')
           : `No alcanzaste los ${result.passing_score}/100 necesarios para desbloquear el siguiente módulo.`}
       </p>
-      ${result.passed ? `<a href="dashboard.html" class="btn btn-accent" style="margin-top:18px;">Volver a mi Campus</a>` : retryBtn}
+      ${result.passed
+        ? (result.next_module_unlocked
+            ? `<a href="dashboard.html" class="btn btn-accent" style="margin-top:18px;">Volver a mi Campus</a>`
+            : `<a href="certificado.html?enrollment=${CURRENT_ENROLLMENT_ID}" class="btn btn-accent" style="margin-top:18px;">🎓 Ver mi certificado</a> <a href="dashboard.html" class="btn btn-outline" style="margin-top:18px;">Mi Campus</a>`)
+        : retryBtn}
     </div>
   `;
   resultEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -421,7 +441,7 @@ let FLOW = { mod:null, lesson:null, step:'welcome' };
 
 function initFlow(mod, progressRow){
   FLOW.mod = mod;
-  FLOW.lesson = mod.lesson_json;
+  FLOW.lesson = personalize(mod.lesson_json);
   FLOW.step = progressRow.completed ? 'done' : (progressRow.current_step || 'welcome');
 
   document.getElementById('lesson-root').innerHTML = `
@@ -483,7 +503,7 @@ function renderWelcome(c, L){
   const w = L.welcome || {};
   c.innerHTML = `
     <div class="stage-card welcome-stage reveal in">
-      <div class="stage-tag" style="color:var(--gold);">Bienvenida</div>
+      <div class="stage-tag" style="color:var(--gold);">Bienvenida${STUDENT_NAME ? ', ' + escName(STUDENT_NAME) : ''} 👋</div>
       <h2 class="serif" style="font-size:clamp(22px,2.6vw,30px);margin:8px 0 14px;">${w.title || 'Bienvenido a esta lección'}</h2>
       <p style="color:var(--muted);font-size:15px;line-height:1.7;margin-bottom:24px;">${w.subtitle || ''}</p>
       <div class="lesson-content-body">${w.guide_html || ''}</div>
@@ -494,11 +514,11 @@ function renderWelcome(c, L){
         </div>
       ` : ''}
       <div class="guide-chip-grid">
-        <div class="guide-chip"><div class="num">1</div><div>Empezamos con calma: dos lecturas cortas para que las bases queden firmes, sin afán</div></div>
-        <div class="guide-chip"><div class="num">2</div><div>Un quiz breve — no para presionarte, sino para confirmar juntos que ya quedó claro</div></div>
-        <div class="guide-chip"><div class="num">3</div><div>Si aprendes mejor viendo que leyendo, aquí repasamos lo mismo con imágenes</div></div>
-        <div class="guide-chip"><div class="num">4</div><div>Un caso real, para que veas cómo se usa esto fuera del examen</div></div>
-        <div class="guide-chip"><div class="num">5</div><div>Cierras resumiendo con tus propias palabras — así es como de verdad se queda grabado</div></div>
+        <div class="guide-chip"><div class="num">📖</div><div><strong>Lecturas</strong> — dos lecturas con ejemplos, esquemas y trucos. Sin afán, a tu ritmo.</div></div>
+        <div class="guide-chip"><div class="num">✅</div><div><strong>Quiz</strong> — corto y con retroalimentación: no es para presionarte, es para confirmar que ya quedó claro.</div></div>
+        <div class="guide-chip"><div class="num">🎮</div><div><strong>Interactivo</strong> — repasamos jugando: tarjetas, parejas y mini-retos visuales.</div></div>
+        <div class="guide-chip"><div class="num">🌎</div><div><strong>Práctica real</strong> — un caso de la vida real para usar lo aprendido (¡y hablar en voz alta!).</div></div>
+        <div class="guide-chip"><div class="num">🏁</div><div><strong>Cierre</strong> — resumes con tus palabras. Así es como de verdad se queda grabado.</div></div>
       </div>
       <button class="btn btn-accent" style="border:none;cursor:pointer;margin-top:28px;" onclick="advanceStep('reading1')">Comenzar la lección →</button>
     </div>
@@ -855,8 +875,10 @@ function renderClosing(c, form){
     document.getElementById('closing-result').innerHTML = `
       <div class="quiz-result-banner pass">
         <div class="score">${data.grade}/100</div>
-        <p style="margin-top:10px;">${data.next_module_unlocked ? '¡Lección completada! Ya desbloqueaste el siguiente módulo.' : '¡Felicitaciones, completaste el curso! Revisa tu certificado en el Campus.'}</p>
-        <a href="dashboard.html" class="btn btn-accent" style="margin-top:18px;">Volver a mi Campus</a>
+        <p style="margin-top:10px;">${data.next_module_unlocked ? '¡Lección completada! Ya desbloqueaste el siguiente módulo.' : '🎓 ¡Felicitaciones, completaste el curso! Tu certificado ya está listo.'}</p>
+        ${data.next_module_unlocked
+          ? `<a href="dashboard.html" class="btn btn-accent" style="margin-top:18px;">Volver a mi Campus</a>`
+          : `<a href="certificado.html?enrollment=${CURRENT_ENROLLMENT_ID}" class="btn btn-accent" style="margin-top:18px;">🎓 Ver mi certificado</a>`}
       </div>
     `;
     e.target.style.display = 'none';

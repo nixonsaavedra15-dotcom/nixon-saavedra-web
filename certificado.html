@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="assets/img/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="robots" content="noindex, nofollow">
+<title>Mi certificado — Nixon Saavedra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,900;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  /* ---- Certificado: hoja A4 horizontal diseñada a 1123 x 794 px (96 dpi) ---- */
+  .cert-toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:0 0 22px;}
+  .cert-toolbar .left{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .name-edit{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);}
+  .name-edit input{padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px;background:#fff;min-width:240px;}
+  .cert-wrap{width:100%;position:relative;}
+  .cert-sheet{
+    width:1123px;height:794px;transform-origin:top left;position:absolute;left:0;top:0;
+    background:
+      radial-gradient(circle at 12% 14%, rgba(184,146,58,.12), transparent 40%),
+      radial-gradient(circle at 90% 88%, rgba(47,111,104,.12), transparent 42%),
+      #fffdf7;
+    box-shadow:0 30px 70px rgba(32,33,29,.18);
+    font-family:'Space Grotesk',sans-serif;color:var(--ink);
+  }
+  .cert-frame{position:absolute;inset:22px;border:3px solid var(--gold);}
+  .cert-frame::before{content:"";position:absolute;inset:9px;border:1px solid var(--steel);}
+  .cert-ribbon{position:absolute;left:0;right:0;top:22px;height:12px;background:linear-gradient(90deg,var(--steel),var(--sky),var(--gold),var(--wine));}
+  .cert-body{position:absolute;inset:60px 90px 56px;display:flex;flex-direction:column;align-items:center;text-align:center;}
+  .cert-brand{font-size:13px;letter-spacing:4px;text-transform:uppercase;color:var(--steel);font-weight:700;margin-top:6px;}
+  .cert-title{font-family:'Fraunces',serif;font-weight:900;font-size:58px;line-height:1.05;margin:16px 0 6px;color:var(--ink);}
+  .cert-title em{font-style:italic;color:var(--wine);font-weight:600;}
+  .cert-sub{font-size:15px;color:var(--muted);letter-spacing:.5px;margin-top:10px;}
+  .cert-name{font-family:'Fraunces',serif;font-style:italic;font-weight:600;font-size:60px;line-height:1.1;margin:14px 0 6px;color:var(--steel);max-width:880px;word-break:break-word;}
+  .cert-name-line{width:520px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:2px 0 14px;}
+  .cert-text{font-size:16px;color:var(--muted);}
+  .cert-course{font-family:'Fraunces',serif;font-weight:700;font-size:34px;margin:10px 0 8px;color:var(--ink);max-width:880px;}
+  .cert-detail{font-size:14.5px;color:var(--muted);max-width:820px;line-height:1.6;}
+  .cert-detail strong{color:var(--ink);}
+  .cert-foot{margin-top:auto;width:100%;display:grid;grid-template-columns:1fr 150px 1fr;align-items:end;gap:20px;}
+  .cert-sign{text-align:center;}
+  .cert-sign .sig{font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--ink);line-height:1;}
+  .cert-sign .bar{height:1px;background:var(--ink);margin:6px 24px 6px;opacity:.5;}
+  .cert-sign .who{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+  .cert-seal{text-align:center;}
+  .cert-code{text-align:center;}
+  .cert-code .c{font-family:'Space Grotesk',monospace;font-weight:700;letter-spacing:2px;font-size:15px;color:var(--ink);}
+  .cert-code .l{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+  .cert-legal{position:absolute;left:90px;right:90px;bottom:34px;text-align:center;font-size:10.5px;color:var(--muted);line-height:1.5;}
+  .cert-state{padding:70px 30px;text-align:center;border:1px dashed var(--line);border-radius:20px;color:var(--muted);}
+  @page{size:A4 landscape;margin:0;}
+  @media print{
+    body{background:#fff !important;cursor:auto !important;}
+    .bg-fx,.cursor-dot,.cursor-ring,header,footer,.cert-toolbar,.whatsapp-fab,.breadcrumb,.no-print{display:none !important;}
+    section,.wrap{padding:0 !important;margin:0 !important;max-width:none !important;}
+    .cert-wrap{height:794px !important;}
+    .cert-sheet{transform:none !important;box-shadow:none;position:fixed;left:0;top:0;}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-fx">
+  <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div class="grain"></div>
+</div>
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+
+<header>
+  <nav class="wrap">
+    <div class="brand">N. Saavedra</div>
+    <button class="nav-toggle" aria-label="Abrir menú" aria-expanded="false"><span></span><span></span><span></span></button>
+    <div class="navlinks">
+      <a href="index.html">Inicio</a>
+      <a href="campus.html">Campus</a>
+      <a href="tienda.html">Tienda</a>
+      <a href="contacto.html">Contacto</a>
+      <a href="dashboard.html" class="nav-account active">Mi Campus</a>
+    </div>
+  </nav>
+</header>
+
+<section class="tight">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="dashboard.html">Mi Campus</a> / <span>Mi certificado</span></div>
+    <div id="cert-root"><div class="cert-state">Cargando tu certificado…</div></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <div class="foot-brand">Nixon Saavedra</div>
+      <p style="color:var(--muted);margin-top:10px;max-width:360px;">Escríbeme para asesorías, cursos, charlas o proyectos editoriales.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/supabase-config.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/script.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const enrollmentId = params.get('enrollment');
+
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function legalNote(slug){
+  const s = (slug || '').toLowerCase();
+  if (s.startsWith('ingles')) {
+    return 'Este documento certifica la finalización del curso de preparación del Campus de Nixon Saavedra. No es un certificado oficial de Cambridge; el certificado oficial se obtiene únicamente presentando el examen en un centro autorizado.';
+  }
+  if (s.includes('icfes')) {
+    return 'Este documento certifica la finalización del curso de preparación del Campus de Nixon Saavedra. No es un documento oficial del ICFES.';
+  }
+  return 'Este documento certifica la finalización del curso en el Campus de Nixon Saavedra.';
+}
+
+function sealSvg(){
+  // Sello tipo roseta con estrella
+  let petals = '';
+  for (let i = 0; i < 16; i++) {
+    const a = i * 22.5;
+    petals += `<ellipse cx="60" cy="22" rx="9" ry="20" fill="#b8923a" opacity=".85" transform="rotate(${a} 60 60)"/>`;
+  }
+  return `<svg viewBox="0 0 120 120" width="130" height="130" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sello">
+    ${petals}
+    <circle cx="60" cy="60" r="34" fill="#2f6f68"/>
+    <circle cx="60" cy="60" r="29" fill="none" stroke="#f6f2e9" stroke-width="1.5" stroke-dasharray="3 3"/>
+    <path d="M60 36 L66 52 L83 52 L69 62 L74 79 L60 69 L46 79 L51 62 L37 52 L54 52 Z" fill="#f6f2e9"/>
+  </svg>`;
+}
+
+function fitSheet(){
+  const wrap = document.getElementById('cert-wrap');
+  const sheet = document.getElementById('cert-sheet');
+  if (!wrap || !sheet) return;
+  const s = Math.min(1, wrap.clientWidth / 1123);
+  sheet.style.transform = `scale(${s})`;
+  wrap.style.height = (794 * s) + 'px';
+}
+
+(async () => {
+  const root = document.getElementById('cert-root');
+
+  if (!supabaseReady()) {
+    root.innerHTML = '<div class="cert-state">El Campus todavía no está conectado a la base de datos.</div>';
+    return;
+  }
+  const session = await requireSession();
+  if (!session) return;
+
+  if (!enrollmentId) {
+    root.innerHTML = '<div class="cert-state">Falta el curso. <a href="dashboard.html" style="color:var(--accent);">Vuelve a tu Campus</a> y abre el certificado desde ahí.</div>';
+    return;
+  }
+
+  const { data: enrollment } = await supabaseClient
+    .from('enrollments')
+    .select('id, user_id, course:courses(id, title, slug)')
+    .eq('id', enrollmentId)
+    .maybeSingle();
+
+  if (!enrollment) {
+    root.innerHTML = '<div class="cert-state">No encontramos esa matrícula.</div>';
+    return;
+  }
+
+  const { data: cert } = await supabaseClient
+    .from('certificates')
+    .select('id, issued_at')
+    .eq('enrollment_id', enrollmentId)
+    .maybeSingle();
+
+  if (!cert) {
+    root.innerHTML = `
+      <div class="cert-state">
+        <div style="font-size:44px;margin-bottom:12px;">🎓</div>
+        <h2 class="serif" style="font-size:24px;margin-bottom:10px;color:var(--ink);">Tu certificado todavía no está listo</h2>
+        <p style="margin-bottom:22px;">Se emite automáticamente cuando completas todos los módulos y apruebas el examen final. ¡Vas por buen camino!</p>
+        <a href="dashboard.html" class="btn btn-accent">Volver a mi Campus</a>
+      </div>`;
+    return;
+  }
+
+  const { data: profile } = await supabaseClient
+    .from('profiles').select('full_name, email').eq('id', enrollment.user_id).maybeSingle();
+
+  const { data: progressRows } = await supabaseClient
+    .from('progress').select('grade').eq('enrollment_id', enrollmentId);
+
+  const grades = (progressRows || []).map(r => r.grade).filter(g => g !== null && g !== undefined).map(Number);
+  const avg = grades.length ? Math.round(grades.reduce((a, b) => a + b, 0) / grades.length) : null;
+
+  const rawName = (profile?.full_name || profile?.email || session.user.email || '').trim();
+  const displayName = rawName.includes('@') ? rawName.split('@')[0] : rawName;
+  const issued = new Date(cert.issued_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+  const code = 'NS-' + String(cert.id).replace(/-/g, '').slice(0, 8).toUpperCase();
+  const courseTitle = enrollment.course?.title || 'Curso';
+
+  root.innerHTML = `
+    <div class="cert-toolbar no-print">
+      <div class="left">
+        <button class="btn btn-accent" style="border:none;cursor:pointer;" onclick="window.print()">⬇️ Descargar PDF / Imprimir</button>
+        <a href="dashboard.html" class="btn btn-outline">Volver a mi Campus</a>
+      </div>
+      <label class="name-edit">¿Tu nombre está bien escrito? Ajústalo antes de descargar:
+        <input type="text" id="name-input" value="${esc(displayName)}" maxlength="70">
+      </label>
+    </div>
+
+    <div class="cert-wrap" id="cert-wrap">
+      <div class="cert-sheet" id="cert-sheet">
+        <div class="cert-ribbon"></div>
+        <div class="cert-frame"></div>
+        <div class="cert-body">
+          <div class="cert-brand">Nixon Saavedra · Campus</div>
+          <div class="cert-title">Certificado de <em>finalización</em></div>
+          <div class="cert-sub">Se otorga con reconocimiento a</div>
+          <div class="cert-name" id="cert-name">${esc(displayName)}</div>
+          <div class="cert-name-line"></div>
+          <div class="cert-text">por completar satisfactoriamente el curso</div>
+          <div class="cert-course">${esc(courseTitle)}</div>
+          <div class="cert-detail">
+            superando todos los módulos y el examen final${avg !== null ? ` con un promedio general de <strong>${avg}/100</strong>` : ''},
+            en constancia y compromiso con su aprendizaje.
+          </div>
+          <div class="cert-foot">
+            <div class="cert-sign">
+              <div class="sig">Nixon Saavedra</div>
+              <div class="bar"></div>
+              <div class="who">Director del Campus</div>
+            </div>
+            <div class="cert-seal">${sealSvg()}</div>
+            <div class="cert-code">
+              <div class="c">${esc(code)}</div>
+              <div class="l">Código del certificado</div>
+              <div style="font-size:13px;margin-top:10px;color:var(--ink);">Emitido el <strong>${esc(issued)}</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="cert-legal">${esc(legalNote(enrollment.course?.slug))}</div>
+      </div>
+    </div>
+    <p class="no-print" style="color:var(--muted);font-size:13px;margin-top:20px;text-align:center;">
+      Para guardarlo como PDF: pulsa «Descargar PDF» y, en la ventana de impresión, elige <strong>«Guardar como PDF»</strong> (orientación horizontal).
+    </p>
+  `;
+
+  document.getElementById('name-input').addEventListener('input', (e) => {
+    document.getElementById('cert-name').textContent = e.target.value.trim() || displayName;
+  });
+
+  fitSheet();
+  window.addEventListener('resize', fitSheet);
+  window.addEventListener('beforeprint', () => { const s = document.getElementById('cert-sheet'); if (s) s.style.transform = 'none'; });
+  window.addEventListener('afterprint', fitSheet);
+})();
+</script>
+</body>
+</html>

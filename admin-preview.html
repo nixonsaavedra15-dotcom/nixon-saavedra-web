@@ -121,7 +121,16 @@ function esc(s){
       `);
     });
 
-    if(L.interactive){
+    if(L.interactive && L.interactive.type === 'match'){
+      html += renderPreviewSection('Interactivo (emparejar) — ' + (L.interactive.title || ''), () => `
+        <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">${esc(L.interactive.intro || '')}</p>
+        ${(L.interactive.pairs || []).map(pr => `
+          <div class="pq-block" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+            <strong style="min-width:200px;">${esc(pr.left)}</strong><span style="color:var(--accent);">⟷</span><span>${esc(pr.right)}</span>
+          </div>
+        `).join('')}
+      `);
+    } else if(L.interactive){
       html += renderPreviewSection('Interactivo — ' + (L.interactive.title || ''), () => `
         ${(L.interactive.slides || []).map(s => `
           <div class="pq-block">
